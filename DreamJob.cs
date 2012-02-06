@@ -1,12 +1,13 @@
 using System;
 using System.Threading;
+using mini_runner.Engine;
 
 namespace JobRunnerWebConsole
 {
-    public class ProductImporterJob : Job
+    public class DreamJob : Job
     {
-        public ProductImporterJob()
-            : base("Product Importer Job", new TimeSpan(0, 0, 0, 30))
+        public DreamJob()
+            : base("Dream Job", new TimeSpan(0, 0, 0, 45))
         {
 
         }

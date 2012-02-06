@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Web;
+using mini_runner.Engine;
 
 namespace JobRunnerWebConsole
 {
@@ -11,9 +12,9 @@ namespace JobRunnerWebConsole
         public static readonly IList<JobLog> Logs = new List<JobLog>();
         public static readonly IList<Job> Jobs = new List<Job>()
         {
-            new OrderIntegratorJob(),
-            new ProductImporterJob(),
-            new ProductStateJob()
+            new FileLoggerJob(),
+            new BrokenJob(),
+            new DreamJob()
         };
         private Timer _Timer;
 

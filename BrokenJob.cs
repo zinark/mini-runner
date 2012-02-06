@@ -1,12 +1,13 @@
 using System;
 using System.Threading;
+using mini_runner.Engine;
 
 namespace JobRunnerWebConsole
 {
-    public class ProductStateJob : Job
+    public class BrokenJob : Job
     {
-        public ProductStateJob()
-            : base("Product State Job", new TimeSpan(0, 0, 0, 45))
+        public BrokenJob()
+            : base("Broken Job", new TimeSpan(0, 0, 0, 30))
         {
 
         }
@@ -18,7 +19,8 @@ namespace JobRunnerWebConsole
 
         public override void OnRun()
         {
-            Thread.Sleep(5000);
+            Thread.Sleep(10000);
+            throw new Exception(("Hello world"));
         }
     }
 }
