@@ -1,13 +1,20 @@
-function native_ListFactory__new(typeToken, length) {
-  return RTT.setTypeInfo(
-      new Array(length),
-      Array.$lookupRTT(RTT.getTypeInfo(typeToken).typeArgs));
+function native_ListImplementation_INDEX(index) {
+  var i = index | 0;
+  if (i !== index) {
+    native__NumberJsUtil__throwIllegalArgumentException(index);
+  } else if (i < 0 || i >= this.length) {
+    native__ListJsUtil__throwIndexOutOfRangeException(index);
+  }
+  return this[i];
 }
-function native_ListImplementation__indexOperator(index) {
-  return this[index];
-}
-function native_ListImplementation__indexAssignOperator(index, value) {
-  this[index] = value;
+function native_ListImplementation_ASSIGN_INDEX(index, value) {
+  var i = index | 0;
+  if (i !== index) {
+    native__NumberJsUtil__throwIllegalArgumentException(index);
+  } else if (i < 0 || i >= this.length) {
+    native__ListJsUtil__throwIndexOutOfRangeException(index);
+  }
+  this[i] = value;
 }
 function native_ListImplementation_get$length() {
   return this.length;
@@ -22,7 +29,7 @@ function native_ListImplementation__removeRange(start, length) {
   this.splice(start, length);
 }
 function native_BoolImplementation_EQ(other) {
-  return typeof other == 'boolean' && this == other;
+  throw Error('UNREACHABLE');
 }
 function native_BoolImplementation_toString() {
   return this.toString();
@@ -112,6 +119,11 @@ function TRUNC$operator(val1, val2) {
 function negate$operator(val) {
   return (typeof(val) == 'number') ? -val : val.negate$operator();
 }
+function EQ$operator(val1, val2) {
+  return (typeof val1 != 'object')
+      ? val1 === val2
+      : val1.EQ$operator(val2);
+}
 function LT$operator(val1, val2) {
   return (typeof(val1) == 'number' && typeof(val2) == 'number')
       ? val1 < val2
@@ -131,15 +143,6 @@ function GTE$operator(val1, val2) {
   return (typeof(val1) == 'number' && typeof(val2) == 'number')
       ? val1 >= val2
       : val1.GTE$operator(val2);
-}
-function EQ$operator(val1, val2) {
-  if (val1 === $Dart$Null) {
-    return val2 === $Dart$Null;
-  } else if (typeof(val1) == typeof(val2) && typeof val1 != 'object') {
-    // number, boolean, string
-    return val1 === val2;
-  } 
-  return val1.EQ$operator(val2);
 }
 function INDEX$operator(obj, index) {
   return obj.INDEX$operator(index);
@@ -688,61 +691,43 @@ function isolate$deserializeMessage(message) {
   }
 }
 function native_NumberImplementation_BIT_XOR(other) {
-  "use strict";
-  return this ^ other;
+  native__NumberJsUtil__throwIllegalArgumentException(other);
 }
 function native_NumberImplementation_BIT_AND(other) {
-  "use strict";
-  return this & other;
+  native__NumberJsUtil__throwIllegalArgumentException(other);
 }
 function native_NumberImplementation_SHL(other) {
-  "use strict";
-  return this << other;
+  native__NumberJsUtil__throwIllegalArgumentException(other);
 }
 function native_NumberImplementation_ADD(other) {
-  "use strict";
-  return this + other;
+  native__NumberJsUtil__throwIllegalArgumentException(other);
 }
 function native_NumberImplementation_SUB(other) {
-  "use strict";
-   return this - other;
+  native__NumberJsUtil__throwIllegalArgumentException(other);
 }
 function native_NumberImplementation_MUL(other) {
-  "use strict";
-  return this * other;
+  native__NumberJsUtil__throwIllegalArgumentException(other);
 }
 function native_NumberImplementation_TRUNC(other) {
-  "use strict";
-  var tmp = this / other;
-  if (tmp < 0) {
-    return Math.ceil(tmp);
-  } else {
-    return Math.floor(tmp);
-  }
-}
-function native_NumberImplementation_LT(other) {
-  "use strict";
-  return this < other;
-}
-function native_NumberImplementation_GT(other) {
-  "use strict";
-  return this > other;
-}
-function native_NumberImplementation_LTE(other) {
-  "use strict";
-  return this <= other;
-}
-function native_NumberImplementation_GTE(other) {
-  "use strict";
-  return this >= other;
-}
-function native_NumberImplementation_EQ(other) {
-  "use strict";
-  return typeof other == 'number' && this == other;
+  native__NumberJsUtil__throwIllegalArgumentException(other);
 }
 function native_NumberImplementation_negate() {
-  "use strict";
-  return -this;
+  throw Error('UNREACHABLE');
+}
+function native_NumberImplementation_EQ(other) {
+  throw Error('UNREACHABLE');
+}
+function native_NumberImplementation_LT(other) {
+  native__NumberJsUtil__throwIllegalArgumentException(other);
+}
+function native_NumberImplementation_GT(other) {
+  native__NumberJsUtil__throwIllegalArgumentException(other);
+}
+function native_NumberImplementation_LTE(other) {
+  native__NumberJsUtil__throwIllegalArgumentException(other);
+}
+function native_NumberImplementation_GTE(other) {
+  native__NumberJsUtil__throwIllegalArgumentException(other);
 }
 function native_NumberImplementation_isNegative() {
   "use strict";
@@ -791,7 +776,6 @@ function RTT(classkey, typekey, typeargs, returnType, functionType, named) {
   }
 }
 RTT.types = {};
-RTT.prototype.derivedTypes = [];
 RTT.prototype.toString = function() { return this.typeKey; }
 function $mapLookup(map, key) {
   return map.hasOwnProperty(key) ? map[key] : null;
@@ -944,8 +928,17 @@ function native_StringImplementation_get$length() {
   return this.length;
 }
 function native_StringImplementation_EQ(other) {
-  "use strict";
-  return typeof other == 'string' && this == other;
+  // TODO(kasperl): We should really try to avoid having wrapped
+  // strings floating around. The usually stem from referencing [this]
+  // in Dart methods patched onto the String.prototype object.
+
+  // Because of the checks in EQ$operator, we know [this] is a string
+  // wrapper, but we have to make sure that [other] is either a
+  // wrapper or a proper string before we can use == to compare the
+  // contents.
+  return (typeof(other) == 'string' || other.constructor === String)
+      ? this == other
+      : false;
 }
 function native_StringImplementation_concat(other) {
   "use strict";
@@ -1039,13 +1032,9 @@ ListFactory$Dart.List$$Factory = function($typeArgs, length_0){
       $Dart$ThrowException(IllegalArgumentException$Dart.IllegalArgumentException$$Factory('negative length ' + $toString(length_0) + ''));
     }
   }
-  var list = ListFactory$Dart._new$$member_(TypeToken$Dart.TypeToken$$Factory(TypeToken$Dart.$lookupRTT([RTT.getTypeArg($typeArgs, 0)])), length_0);
+  var list = Array.ListImplementation$$Factory(Array.$lookupRTT([RTT.getTypeArg($typeArgs, 0)]), length_0);
   list._isFixed$$setter_(tmp$0 = isFixed) , tmp$0;
   return list;
-}
-;
-ListFactory$Dart._new$$member_ = function(typeToken, length_0){
-  return native_ListFactory__new(typeToken, length_0);
 }
 ;
 Array.$lookupRTT = function(typeArgs, named){
@@ -1054,7 +1043,6 @@ Array.$lookupRTT = function(typeArgs, named){
 ;
 Array.$RTTimplements = function(rtt, typeArgs){
   Array.$addTo(rtt, typeArgs);
-  rtt.derivedTypes = [];
 }
 ;
 Array.$addTo = function(target, typeArgs){
@@ -1064,6 +1052,20 @@ Array.$addTo = function(target, typeArgs){
 }
 ;
 Array.prototype.$implements$List$Dart = 1;
+Array.$Constructor = function(length_0){
+}
+;
+Array.$Initializer = function(length_0){
+}
+;
+Array.ListImplementation$$Factory = function($rtt, length_0){
+  var tmp$0 = new Array(length_0);
+  tmp$0.$typeInfo = $rtt;
+  Array.$Initializer.call(tmp$0, length_0);
+  Array.$Constructor.call(tmp$0, length_0);
+  return tmp$0;
+}
+;
 Array.prototype._isFixed$$getter_ = function(){
   return this._isFixed$$field_;
 }
@@ -1073,17 +1075,11 @@ Array.prototype._isFixed$$setter_ = function(tmp$0){
 }
 ;
 Array.prototype.INDEX$operator = function(index){
-  if (LTE$operator(0, index) && LT$operator(index, this.length$getter())) {
-    return this._indexOperator$$member_(index);
-  }
-  $Dart$ThrowException(IndexOutOfRangeException$Dart.IndexOutOfRangeException$$Factory(index));
+  return native_ListImplementation_INDEX.call(this, index);
 }
 ;
 Array.prototype.ASSIGN_INDEX$operator = function(index, value){
-  if (LT$operator(index, 0) || LTE$operator(this.length$getter(), index)) {
-    $Dart$ThrowException(IndexOutOfRangeException$Dart.IndexOutOfRangeException$$Factory(index));
-  }
-  this._indexAssignOperator$$member_(index, value);
+  return native_ListImplementation_ASSIGN_INDEX.call(this, index, value);
 }
 ;
 Array.prototype.iterator$member = function(){
@@ -1099,14 +1095,6 @@ Array.prototype.iterator$named = function($n, $o){
   if ($o.count || $n != 0)
     $nsme();
   return Array.prototype.iterator$member.call(this);
-}
-;
-Array.prototype._indexOperator$$member_ = function(index){
-  return native_ListImplementation__indexOperator.call(this, index);
-}
-;
-Array.prototype._indexAssignOperator$$member_ = function(index, value){
-  return native_ListImplementation__indexAssignOperator.call(this, index, value);
 }
 ;
 Array.prototype.length$getter = function(){
@@ -1181,6 +1169,12 @@ Array.prototype.removeRange$member = function(start, length_0){
   }
   Arrays$Dart.rangeCheck$member(this, start, length_0);
   this._removeRange$$member_(start, length_0);
+}
+;
+Array.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return Array.prototype.removeRange$member.call(this, start, length_0);
 }
 ;
 Array.prototype.getRange$member = function(start, length_0){
@@ -1274,7 +1268,6 @@ VariableSizeListIterator$Dart.$lookupRTT = function(typeArgs, named){
 ;
 VariableSizeListIterator$Dart.$RTTimplements = function(rtt, typeArgs){
   VariableSizeListIterator$Dart.$addTo(rtt, typeArgs);
-  rtt.derivedTypes = [];
 }
 ;
 VariableSizeListIterator$Dart.$addTo = function(target, typeArgs){
@@ -1344,7 +1337,6 @@ FixedSizeListIterator$Dart.$lookupRTT = function(typeArgs, named){
 ;
 FixedSizeListIterator$Dart.$RTTimplements = function(rtt, typeArgs){
   FixedSizeListIterator$Dart.$addTo(rtt, typeArgs);
-  rtt.derivedTypes = [];
 }
 ;
 FixedSizeListIterator$Dart.$addTo = function(target, typeArgs){
@@ -1392,6 +1384,13 @@ _ListJsUtil$Dart._listLength$$member_ = function(list){
 ;
 function native__ListJsUtil__listLength(list){
   return _ListJsUtil$Dart._listLength$$member_(list);
+}
+_ListJsUtil$Dart._throwIndexOutOfRangeException$$member_ = function(index){
+  $Dart$ThrowException(IndexOutOfRangeException$Dart.IndexOutOfRangeException$$Factory(index));
+}
+;
+function native__ListJsUtil__throwIndexOutOfRangeException(index){
+  return _ListJsUtil$Dart._throwIndexOutOfRangeException$$member_(index);
 }
 function Arrays$Dart(){
 }
@@ -1550,7 +1549,7 @@ function native_ExceptionHelper_createObjectNotClosureException(){
   return ExceptionHelper$Dart.createObjectNotClosureException$member();
 }
 ExceptionHelper$Dart.createNoSuchMethodException$member = function(receiver, functionName, arguments_0){
-  return NoSuchMethodException$Dart.NoSuchMethodException$$Factory(receiver, functionName, arguments_0);
+  return NoSuchMethodException$Dart.NoSuchMethodException$$Factory(receiver, functionName, arguments_0, '');
 }
 ;
 function native_ExceptionHelper_createNoSuchMethodException(receiver, functionName, arguments_0){
@@ -2674,6 +2673,15 @@ Number.prototype.dynamic$getter = function(){
   return this.toDouble$member();
 }
 ;
+function _NumberJsUtil$Dart(){
+}
+_NumberJsUtil$Dart._throwIllegalArgumentException$$member_ = function(argument){
+  $Dart$ThrowException(IllegalArgumentException$Dart.IllegalArgumentException$$Factory(RTT.setTypeInfo([argument], Array.$lookupRTT())));
+}
+;
+function native__NumberJsUtil__throwIllegalArgumentException(argument){
+  return _NumberJsUtil$Dart._throwIllegalArgumentException$$member_(argument);
+}
 String.$lookupRTT = function(typeArgs, named){
   return RTT.create($cls('String'), String.$RTTimplements, null, named);
 }
@@ -3000,30 +3008,6 @@ TimeZoneImplementation$Dart.prototype.$const_id = function(){
   return $cls('TimeZoneImplementation$Dart') + (':' + $dart_const_id(this.isUtc$field));
 }
 ;
-function TypeToken$Dart(){
-}
-TypeToken$Dart.$lookupRTT = function(typeArgs, named){
-  return RTT.create($cls('TypeToken$Dart'), null, typeArgs, named);
-}
-;
-TypeToken$Dart.$Constructor = function(){
-}
-;
-TypeToken$Dart.$Initializer = function(){
-}
-;
-TypeToken$Dart.TypeToken$$Factory = function($rtt){
-  var tmp$0 = new TypeToken$Dart;
-  tmp$0.$typeInfo = $rtt;
-  TypeToken$Dart.$Initializer.call(tmp$0);
-  TypeToken$Dart.$Constructor.call(tmp$0);
-  return tmp$0;
-}
-;
-TypeToken$Dart.prototype.$const_id = function(){
-  return $cls('TypeToken$Dart');
-}
-;
 function ExceptionImplementation$Dart(){
 }
 ExceptionImplementation$Dart.$lookupRTT = function(typeArgs, named){
@@ -3081,7 +3065,6 @@ HashMapImplementation$Dart.$lookupRTT = function(typeArgs, named){
 ;
 HashMapImplementation$Dart.$RTTimplements = function(rtt, typeArgs){
   HashMapImplementation$Dart.$addTo(rtt, typeArgs);
-  rtt.derivedTypes = [];
 }
 ;
 HashMapImplementation$Dart.$addTo = function(target, typeArgs){
@@ -3351,8 +3334,9 @@ HashMapImplementation$Dart.prototype.forEach$member = function(f){
   {
     var i = 0;
     for (; LT$operator(i, length_0); tmp$0 = i , (i = ADD$operator(tmp$0, 1) , tmp$0)) {
-      if (this._keys$$getter_().INDEX$operator(i) != null && this._keys$$getter_().INDEX$operator(i) !== HashMapImplementation$Dart._DELETED_KEY$$getter_()) {
-        f(2, $noargs, this._keys$$getter_().INDEX$operator(i), this._values$$getter_().INDEX$operator(i));
+      var key_0 = this._keys$$getter_().INDEX$operator(i);
+      if (key_0 != null && key_0 !== HashMapImplementation$Dart._DELETED_KEY$$getter_()) {
+        f(2, $noargs, key_0, this._values$$getter_().INDEX$operator(i));
       }
     }
   }
@@ -3531,7 +3515,6 @@ Collection$Dart.$lookupRTT = function(typeArgs, named){
 ;
 Collection$Dart.$RTTimplements = function(rtt, typeArgs){
   Collection$Dart.$addTo(rtt, typeArgs);
-  rtt.derivedTypes = [];
 }
 ;
 Collection$Dart.$addTo = function(target, typeArgs){
@@ -3659,20 +3642,21 @@ NoSuchMethodException$Dart.$addTo = function(target){
   Exception$Dart.$addTo(target);
 }
 ;
-NoSuchMethodException$Dart.$Constructor = function(_receiver, _functionName, _arguments){
+NoSuchMethodException$Dart.$Constructor = function(_receiver, _functionName, _arguments, _extraMessage){
 }
 ;
-NoSuchMethodException$Dart.$Initializer = function(_receiver, _functionName, _arguments){
+NoSuchMethodException$Dart.$Initializer = function(_receiver, _functionName, _arguments, _extraMessage){
   this._receiver$$field_ = _receiver;
   this._functionName$$field_ = _functionName;
   this._arguments$$field_ = _arguments;
+  this._extraMessage$$field_ = _extraMessage;
 }
 ;
-NoSuchMethodException$Dart.NoSuchMethodException$$Factory = function(_receiver, _functionName, _arguments){
+NoSuchMethodException$Dart.NoSuchMethodException$$Factory = function(_receiver, _functionName, _arguments, _extraMessage){
   var tmp$0 = new NoSuchMethodException$Dart;
   tmp$0.$typeInfo = NoSuchMethodException$Dart.$lookupRTT();
-  NoSuchMethodException$Dart.$Initializer.call(tmp$0, _receiver, _functionName, _arguments);
-  NoSuchMethodException$Dart.$Constructor.call(tmp$0, _receiver, _functionName, _arguments);
+  NoSuchMethodException$Dart.$Initializer.call(tmp$0, _receiver, _functionName, _arguments, _extraMessage);
+  NoSuchMethodException$Dart.$Constructor.call(tmp$0, _receiver, _functionName, _arguments, _extraMessage);
   return tmp$0;
 }
 ;
@@ -3689,7 +3673,8 @@ NoSuchMethodException$Dart.prototype.toString$member = function(){
     }
   }
   sb.add$named(1, $noargs, ']');
-  return ADD$operator("NoSuchMethodException - receiver: '" + $toString(this._receiver$$getter_()) + "' ", "function name: '" + $toString(this._functionName$$getter_()) + "' arguments: [" + $toString(sb) + ']');
+  var x = this._extraMessage$$getter_();
+  return ADD$operator("NoSuchMethodException - receiver: '" + $toString(this._receiver$$getter_()) + "' ", "function name: '" + $toString(this._functionName$$getter_()) + "' arguments: [" + $toString(sb) + ']' + $toString(x) + '');
 }
 ;
 NoSuchMethodException$Dart.prototype.toString$named = function($n, $o){
@@ -3710,8 +3695,12 @@ NoSuchMethodException$Dart.prototype._arguments$$getter_ = function(){
   return this._arguments$$field_;
 }
 ;
+NoSuchMethodException$Dart.prototype._extraMessage$$getter_ = function(){
+  return this._extraMessage$$field_;
+}
+;
 NoSuchMethodException$Dart.prototype.$const_id = function(){
-  return $cls('NoSuchMethodException$Dart') + (':' + $dart_const_id(this._receiver$$field_)) + (':' + $dart_const_id(this._functionName$$field_)) + (':' + $dart_const_id(this._arguments$$field_));
+  return $cls('NoSuchMethodException$Dart') + (':' + $dart_const_id(this._receiver$$field_)) + (':' + $dart_const_id(this._functionName$$field_)) + (':' + $dart_const_id(this._arguments$$field_)) + (':' + $dart_const_id(this._extraMessage$$field_));
 }
 ;
 function ObjectNotClosureException$Dart(){
@@ -3774,23 +3763,23 @@ IllegalArgumentException$Dart.$addTo = function(target){
   Exception$Dart.$addTo(target);
 }
 ;
-IllegalArgumentException$Dart.$Constructor = function(args){
+IllegalArgumentException$Dart.$Constructor = function(arg){
 }
 ;
-IllegalArgumentException$Dart.$Initializer = function(args){
-  this._args$$field_ = args;
+IllegalArgumentException$Dart.$Initializer = function(arg){
+  this._arg$$field_ = arg;
 }
 ;
-IllegalArgumentException$Dart.IllegalArgumentException$$Factory = function(args){
+IllegalArgumentException$Dart.IllegalArgumentException$$Factory = function(arg){
   var tmp$0 = new IllegalArgumentException$Dart;
   tmp$0.$typeInfo = IllegalArgumentException$Dart.$lookupRTT();
-  IllegalArgumentException$Dart.$Initializer.call(tmp$0, args);
-  IllegalArgumentException$Dart.$Constructor.call(tmp$0, args);
+  IllegalArgumentException$Dart.$Initializer.call(tmp$0, arg);
+  IllegalArgumentException$Dart.$Constructor.call(tmp$0, arg);
   return tmp$0;
 }
 ;
 IllegalArgumentException$Dart.prototype.toString$member = function(){
-  return 'Illegal argument(s): ' + $toString(this._args$$getter_()) + '';
+  return 'Illegal argument(s): ' + $toString(this._arg$$getter_()) + '';
 }
 ;
 IllegalArgumentException$Dart.prototype.toString$named = function($n, $o){
@@ -3799,12 +3788,12 @@ IllegalArgumentException$Dart.prototype.toString$named = function($n, $o){
   return IllegalArgumentException$Dart.prototype.toString$member.call(this);
 }
 ;
-IllegalArgumentException$Dart.prototype._args$$getter_ = function(){
-  return this._args$$field_;
+IllegalArgumentException$Dart.prototype._arg$$getter_ = function(){
+  return this._arg$$field_;
 }
 ;
 IllegalArgumentException$Dart.prototype.$const_id = function(){
-  return $cls('IllegalArgumentException$Dart') + (':' + $dart_const_id(this._args$$field_));
+  return $cls('IllegalArgumentException$Dart') + (':' + $dart_const_id(this._arg$$field_));
 }
 ;
 function NullPointerException$Dart(){
@@ -4072,7 +4061,6 @@ List$Dart.$lookupRTT = function(typeArgs, named){
 ;
 List$Dart.$RTTimplements = function(rtt, typeArgs){
   List$Dart.$addTo(rtt, typeArgs);
-  rtt.derivedTypes = [];
 }
 ;
 List$Dart.$addTo = function(target, typeArgs){
@@ -4100,7 +4088,6 @@ HashMap$Dart.$lookupRTT = function(typeArgs, named){
 ;
 HashMap$Dart.$RTTimplements = function(rtt, typeArgs){
   HashMap$Dart.$addTo(rtt, typeArgs);
-  rtt.derivedTypes = [];
 }
 ;
 HashMap$Dart.$addTo = function(target, typeArgs){
@@ -4434,6 +4421,20 @@ function native__DOMWindowWrappingImplementation__get_window(_this) {
     throw __dom_wrap_exception(e);
   }
 }
+function native__DOMWindowWrappingImplementation__open(_this, url, name) {
+  try {
+    return __dom_wrap(_this.$dom.open(__dom_unwrap(url), __dom_unwrap(name)));
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
+function native__DOMWindowWrappingImplementation__open_2(_this, url, name, options) {
+  try {
+    return __dom_wrap(_this.$dom.open(__dom_unwrap(url), __dom_unwrap(name), __dom_unwrap(options)));
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
 function native__DOMWindowWrappingImplementation__print(_this) {
   try {
     return __dom_wrap(_this.$dom.print());
@@ -4448,9 +4449,16 @@ function native__DataTransferItemListWrappingImplementation__get_length(_this) {
     throw __dom_wrap_exception(e);
   }
 }
-function native__DataTransferItemListWrappingImplementation__add(_this, data, type) {
+function native__DataTransferItemListWrappingImplementation__add(_this, data_OR_file) {
   try {
-    return __dom_wrap(_this.$dom.add(__dom_unwrap(data), __dom_unwrap(type)));
+    return __dom_wrap(_this.$dom.add(__dom_unwrap(data_OR_file)));
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
+function native__DataTransferItemListWrappingImplementation__add_2(_this, data_OR_file, type) {
+  try {
+    return __dom_wrap(_this.$dom.add(__dom_unwrap(data_OR_file), __dom_unwrap(type)));
   } catch (e) {
     throw __dom_wrap_exception(e);
   }
@@ -4721,9 +4729,23 @@ function native__HTMLCollectionWrappingImplementation__item(_this, index) {
     throw __dom_wrap_exception(e);
   }
 }
+function native__HTMLDetailsElementWrappingImplementation__get_open(_this) {
+  try {
+    return __dom_wrap(_this.$dom.open);
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
 function native__HTMLDocumentWrappingImplementation__clear(_this) {
   try {
     return __dom_wrap(_this.$dom.clear());
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
+function native__HTMLDocumentWrappingImplementation__open(_this) {
+  try {
+    return __dom_wrap(_this.$dom.open());
   } catch (e) {
     throw __dom_wrap_exception(e);
   }
@@ -4927,6 +4949,13 @@ function native__IDBCursorWithValueWrappingImplementation__get_value(_this) {
 function native__IDBDatabaseExceptionWrappingImplementation__toString(_this) {
   try {
     return __dom_wrap(_this.$dom.toString());
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
+function native__IDBFactoryWrappingImplementation__open(_this, name) {
+  try {
+    return __dom_wrap(_this.$dom.open(__dom_unwrap(name)));
   } catch (e) {
     throw __dom_wrap_exception(e);
   }
@@ -5540,6 +5569,13 @@ function native__Uint8ArrayWrappingImplementation__set_index(_this, index, value
     throw __dom_wrap_exception(e);
   }
 }
+function native__Uint8ClampedArrayWrappingImplementation__get_length_Uint8ClampedArray(_this) {
+  try {
+    return __dom_wrap(_this.$dom.length);
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
 function native__WebGLRenderingContextWrappingImplementation__clear(_this, mask) {
   try {
     return __dom_wrap(_this.$dom.clear(__dom_unwrap(mask)));
@@ -5610,6 +5646,41 @@ function native__WorkerLocationWrappingImplementation__toString(_this) {
     throw __dom_wrap_exception(e);
   }
 }
+function native__XMLHttpRequestWrappingImplementation__get_responseText(_this) {
+  try {
+    return __dom_wrap(_this.$dom.responseText);
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
+function native__XMLHttpRequestWrappingImplementation__open(_this, method, url) {
+  try {
+    return __dom_wrap(_this.$dom.open(__dom_unwrap(method), __dom_unwrap(url)));
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
+function native__XMLHttpRequestWrappingImplementation__open_2(_this, method, url, async) {
+  try {
+    return __dom_wrap(_this.$dom.open(__dom_unwrap(method), __dom_unwrap(url), __dom_unwrap(async)));
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
+function native__XMLHttpRequestWrappingImplementation__open_3(_this, method, url, async, user) {
+  try {
+    return __dom_wrap(_this.$dom.open(__dom_unwrap(method), __dom_unwrap(url), __dom_unwrap(async), __dom_unwrap(user)));
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
+function native__XMLHttpRequestWrappingImplementation__open_4(_this, method, url, async, user, password) {
+  try {
+    return __dom_wrap(_this.$dom.open(__dom_unwrap(method), __dom_unwrap(url), __dom_unwrap(async), __dom_unwrap(user), __dom_unwrap(password)));
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
 function native__XMLHttpRequestWrappingImplementation__send(_this) {
   try {
     return __dom_wrap(_this.$dom.send());
@@ -5662,6 +5733,13 @@ function native__XMLHttpRequestExceptionWrappingImplementation__toString(_this) 
 function native__XPathExceptionWrappingImplementation__toString(_this) {
   try {
     return __dom_wrap(_this.$dom.toString());
+  } catch (e) {
+    throw __dom_wrap_exception(e);
+  }
+}
+function native__XMLHttpRequestFactoryProvider_create() {
+  try {
+    return __dom_wrap(new XMLHttpRequest());
   } catch (e) {
     throw __dom_wrap_exception(e);
   }
@@ -5795,6 +5873,7 @@ var __dom_type_map = {
   "HTMLButtonElement": native__HTMLButtonElementWrappingImplementation_create__HTMLButtonElementWrappingImplementation,
   "HTMLCanvasElement": native__HTMLCanvasElementWrappingImplementation_create__HTMLCanvasElementWrappingImplementation,
   "HTMLCollection": native__HTMLCollectionWrappingImplementation_create__HTMLCollectionWrappingImplementation,
+  "HTMLContentElement": native__HTMLContentElementWrappingImplementation_create__HTMLContentElementWrappingImplementation,
   "HTMLDListElement": native__HTMLDListElementWrappingImplementation_create__HTMLDListElementWrappingImplementation,
   "HTMLDataListElement": native__HTMLDataListElementWrappingImplementation_create__HTMLDataListElementWrappingImplementation,
   "HTMLDetailsElement": native__HTMLDetailsElementWrappingImplementation_create__HTMLDetailsElementWrappingImplementation,
@@ -6092,8 +6171,9 @@ var __dom_type_map = {
   "Screen": native__ScreenWrappingImplementation_create__ScreenWrappingImplementation,
   "ScriptProfile": native__ScriptProfileWrappingImplementation_create__ScriptProfileWrappingImplementation,
   "ScriptProfileNode": native__ScriptProfileNodeWrappingImplementation_create__ScriptProfileNodeWrappingImplementation,
+  "ShadowRoot": native__ShadowRootWrappingImplementation_create__ShadowRootWrappingImplementation,
   "SharedWorker": native__SharedWorkerWrappingImplementation_create__SharedWorkerWrappingImplementation,
-  "SharedWorkercontext": native__SharedWorkercontextWrappingImplementation_create__SharedWorkercontextWrappingImplementation,
+  "SharedWorkerContext": native__SharedWorkerContextWrappingImplementation_create__SharedWorkerContextWrappingImplementation,
   "SpeechInputEvent": native__SpeechInputEventWrappingImplementation_create__SpeechInputEventWrappingImplementation,
   "SpeechInputResult": native__SpeechInputResultWrappingImplementation_create__SpeechInputResultWrappingImplementation,
   "SpeechInputResultList": native__SpeechInputResultListWrappingImplementation_create__SpeechInputResultListWrappingImplementation,
@@ -6120,6 +6200,7 @@ var __dom_type_map = {
   "Uint16Array": native__Uint16ArrayWrappingImplementation_create__Uint16ArrayWrappingImplementation,
   "Uint32Array": native__Uint32ArrayWrappingImplementation_create__Uint32ArrayWrappingImplementation,
   "Uint8Array": native__Uint8ArrayWrappingImplementation_create__Uint8ArrayWrappingImplementation,
+  "Uint8ClampedArray": native__Uint8ClampedArrayWrappingImplementation_create__Uint8ClampedArrayWrappingImplementation,
   "ValidityState": native__ValidityStateWrappingImplementation_create__ValidityStateWrappingImplementation,
   "WaveShaperNode": native__WaveShaperNodeWrappingImplementation_create__WaveShaperNodeWrappingImplementation,
   "WebGLActiveInfo": native__WebGLActiveInfoWrappingImplementation_create__WebGLActiveInfoWrappingImplementation,
@@ -6146,6 +6227,7 @@ var __dom_type_map = {
   "WebKitCSSKeyframeRule": native__WebKitCSSKeyframeRuleWrappingImplementation_create__WebKitCSSKeyframeRuleWrappingImplementation,
   "WebKitCSSKeyframesRule": native__WebKitCSSKeyframesRuleWrappingImplementation_create__WebKitCSSKeyframesRuleWrappingImplementation,
   "WebKitCSSMatrix": native__WebKitCSSMatrixWrappingImplementation_create__WebKitCSSMatrixWrappingImplementation,
+  "WebKitCSSRegionRule": native__WebKitCSSRegionRuleWrappingImplementation_create__WebKitCSSRegionRuleWrappingImplementation,
   "WebKitCSSTransformValue": native__WebKitCSSTransformValueWrappingImplementation_create__WebKitCSSTransformValueWrappingImplementation,
   "WebKitMutationObserver": native__WebKitMutationObserverWrappingImplementation_create__WebKitMutationObserverWrappingImplementation,
   "WebKitNamedFlow": native__WebKitNamedFlowWrappingImplementation_create__WebKitNamedFlowWrappingImplementation,
@@ -6348,7 +6430,8 @@ dom_externs.URL;                        // attribute Document.URL, attribute Eve
 dom_externs.a;                          // attribute SVGMatrix.a, attribute WebKitCSSMatrix.a
 dom_externs.aLink;                      // attribute HTMLBodyElement.aLink
 dom_externs.abbr;                       // attribute HTMLTableCellElement.abbr
-dom_externs.abort;                      // operation FileReader.abort, operation FileWriter.abort, operation IDBTransaction.abort, operation XMLHttpRequest.abort
+dom_externs.abort;                      // operation DOMApplicationCache.abort, operation FileReader.abort, operation FileWriter.abort, operation IDBTransaction.abort, operation XMLHttpRequest.abort
+dom_externs.absolute;                   // attribute DeviceOrientationEvent.absolute
 dom_externs.accept;                     // attribute HTMLInputElement.accept
 dom_externs.acceptCharset;              // attribute HTMLFormElement.acceptCharset
 dom_externs.acceptNode;                 // operation NodeFilter.acceptNode
@@ -6564,8 +6647,8 @@ dom_externs.comparePoint;               // operation Range.comparePoint
 dom_externs.compatMode;                 // attribute Document.compatMode, attribute HTMLDocument.compatMode
 dom_externs.compileShader;              // operation WebGLRenderingContext.compileShader
 dom_externs.complete;                   // attribute HTMLImageElement.complete
-dom_externs.compressedTexImage2D;       // operation WebGLCompressedTextures.compressedTexImage2D
-dom_externs.compressedTexSubImage2D;    // operation WebGLCompressedTextures.compressedTexSubImage2D
+dom_externs.compressedTexImage2D;       // operation WebGLCompressedTextures.compressedTexImage2D, operation WebGLRenderingContext.compressedTexImage2D
+dom_externs.compressedTexSubImage2D;    // operation WebGLCompressedTextures.compressedTexSubImage2D, operation WebGLRenderingContext.compressedTexSubImage2D
 dom_externs.coneGain;                   // attribute AudioPannerNode.coneGain
 dom_externs.coneInnerAngle;             // attribute AudioPannerNode.coneInnerAngle
 dom_externs.coneOuterAngle;             // attribute AudioPannerNode.coneOuterAngle
@@ -6688,7 +6771,7 @@ dom_externs.createWaveShaper;           // operation AudioContext.createWaveShap
 dom_externs.createWriter;               // operation FileEntry.createWriter, operation FileEntrySync.createWriter
 dom_externs.crossOrigin;                // attribute HTMLImageElement.crossOrigin
 dom_externs.crypto;                     // attribute DOMWindow.crypto
-dom_externs.cssRules;                   // attribute CSSMediaRule.cssRules, attribute CSSStyleSheet.cssRules, attribute WebKitCSSKeyframesRule.cssRules
+dom_externs.cssRules;                   // attribute CSSMediaRule.cssRules, attribute CSSStyleSheet.cssRules, attribute WebKitCSSKeyframesRule.cssRules, attribute WebKitCSSRegionRule.cssRules
 dom_externs.cssText;                    // attribute CSSRule.cssText, attribute CSSStyleDeclaration.cssText, attribute CSSValue.cssText
 dom_externs.cssValueType;               // attribute CSSValue.cssValueType
 dom_externs.ctrlKey;                    // attribute KeyboardEvent.ctrlKey, attribute MouseEvent.ctrlKey, attribute TouchEvent.ctrlKey, attribute WheelEvent.ctrlKey
@@ -6891,7 +6974,7 @@ dom_externs.frequencyBinCount;          // attribute RealtimeAnalyserNode.freque
 dom_externs.fromElement;                // attribute MouseEvent.fromElement
 dom_externs.frontFace;                  // operation WebGLRenderingContext.frontFace
 dom_externs.fullPath;                   // attribute Entry.fullPath, attribute EntrySync.fullPath
-dom_externs.functionLocation;           // operation InjectedScriptHost.functionLocation
+dom_externs.functionDetails;            // operation InjectedScriptHost.functionDetails
 dom_externs.functionName;               // attribute JavaScriptCallFrame.functionName, attribute ScriptProfileNode.functionName
 dom_externs.fx;                         // attribute SVGRadialGradientElement.fx
 dom_externs.fy;                         // attribute SVGRadialGradientElement.fy
@@ -6928,7 +7011,6 @@ dom_externs.getContext;                 // operation HTMLCanvasElement.getContex
 dom_externs.getContextAttributes;       // operation WebGLRenderingContext.getContextAttributes
 dom_externs.getCounterValue;            // operation CSSPrimitiveValue.getCounterValue
 dom_externs.getCueAsHTML;               // operation TextTrackCue.getCueAsHTML
-dom_externs.getCueAsSource;             // operation TextTrackCue.getCueAsSource
 dom_externs.getCueById;                 // operation TextTrackCueList.getCueById
 dom_externs.getCurrentPosition;         // operation Geolocation.getCurrentPosition
 dom_externs.getCurrentTime;             // operation SVGAnimationElement.getCurrentTime, operation SVGSVGElement.getCurrentTime
@@ -7034,7 +7116,7 @@ dom_externs.high;                       // attribute HTMLMeterElement.high
 dom_externs.hint;                       // operation WebGLRenderingContext.hint
 dom_externs.history;                    // attribute DOMWindow.history
 dom_externs.horizontalOverflow;         // attribute OverflowEvent.horizontalOverflow
-dom_externs.host;                       // attribute HTMLAnchorElement.host, attribute HTMLAreaElement.host, attribute Location.host, attribute WorkerLocation.host
+dom_externs.host;                       // attribute HTMLAnchorElement.host, attribute HTMLAreaElement.host, attribute Location.host, attribute ShadowRoot.host, attribute WorkerLocation.host
 dom_externs.hostname;                   // attribute HTMLAnchorElement.hostname, attribute HTMLAreaElement.hostname, attribute Location.hostname, attribute WorkerLocation.hostname
 dom_externs.href;                       // attribute CSSImportRule.href, attribute HTMLAnchorElement.href, attribute HTMLAreaElement.href, attribute HTMLBaseElement.href, attribute HTMLLinkElement.href, attribute Location.href, attribute SVGAElement.href, attribute SVGAltGlyphElement.href, attribute SVGCursorElement.href, attribute SVGFEImageElement.href, attribute SVGFilterElement.href, attribute SVGGlyphRefElement.href, attribute SVGGradientElement.href, attribute SVGImageElement.href, attribute SVGMPathElement.href, attribute SVGPatternElement.href, attribute SVGScriptElement.href, attribute SVGTRefElement.href, attribute SVGTextPathElement.href, attribute SVGURIReference.href, attribute SVGUseElement.href, attribute StyleSheet.href, attribute WorkerLocation.href
 dom_externs.hreflang;                   // attribute HTMLAnchorElement.hreflang, attribute HTMLLinkElement.hreflang
@@ -7111,7 +7193,7 @@ dom_externs.isFile;                     // attribute Entry.isFile, attribute Ent
 dom_externs.isFramebuffer;              // operation WebGLRenderingContext.isFramebuffer
 dom_externs.isHTMLAllCollection;        // operation InjectedScriptHost.isHTMLAllCollection
 dom_externs.isId;                       // attribute Attr.isId
-dom_externs.isLocked;                   // operation PointerLock.isLocked
+dom_externs.isLocked;                   // attribute PointerLock.isLocked
 dom_externs.isMap;                      // attribute HTMLImageElement.isMap
 dom_externs.isPointInPath;              // operation CanvasRenderingContext2D.isPointInPath
 dom_externs.isPointInRange;             // operation Range.isPointInRange
@@ -7165,7 +7247,7 @@ dom_externs.latitude;                   // attribute Coordinates.latitude
 dom_externs.layerX;                     // attribute UIEvent.layerX
 dom_externs.layerY;                     // attribute UIEvent.layerY
 dom_externs.left;                       // attribute ClientRect.left, attribute Rect.left
-dom_externs.length;                     // attribute AudioBuffer.length, attribute CSSRuleList.length, attribute CSSStyleDeclaration.length, attribute CSSValueList.length, attribute CanvasPixelArray.length, attribute CharacterData.length, attribute ClientRectList.length, attribute DOMMimeTypeArray.length, attribute DOMPlugin.length, attribute DOMPluginArray.length, attribute DOMTokenList.length, attribute DOMWindow.length, attribute DataTransferItemList.length, attribute EntryArray.length, attribute EntryArraySync.length, attribute FileList.length, attribute FileWriter.length, attribute FileWriterSync.length, attribute Float32Array.length, attribute Float64Array.length, attribute HTMLAllCollection.length, attribute HTMLCollection.length, attribute HTMLFormElement.length, attribute HTMLOptionsCollection.length, attribute HTMLPropertiesCollection.length, attribute HTMLSelectElement.length, attribute History.length, attribute Int16Array.length, attribute Int32Array.length, attribute Int8Array.length, attribute MediaList.length, attribute NamedNodeMap.length, attribute NodeList.length, attribute SQLResultSetRowList.length, attribute SVGElementInstanceList.length, attribute SpeechInputResultList.length, attribute Storage.length, attribute StyleSheetList.length, attribute TextTrackCueList.length, attribute TextTrackList.length, attribute TimeRanges.length, attribute TouchList.length, attribute Uint16Array.length, attribute Uint32Array.length, attribute Uint8Array.length, attribute WebKitAnimationList.length
+dom_externs.length;                     // attribute AudioBuffer.length, attribute CSSRuleList.length, attribute CSSStyleDeclaration.length, attribute CSSValueList.length, attribute CanvasPixelArray.length, attribute CharacterData.length, attribute ClientRectList.length, attribute DOMMimeTypeArray.length, attribute DOMPlugin.length, attribute DOMPluginArray.length, attribute DOMTokenList.length, attribute DOMWindow.length, attribute DataTransferItemList.length, attribute EntryArray.length, attribute EntryArraySync.length, attribute FileList.length, attribute FileWriter.length, attribute FileWriterSync.length, attribute Float32Array.length, attribute Float64Array.length, attribute HTMLAllCollection.length, attribute HTMLCollection.length, attribute HTMLFormElement.length, attribute HTMLOptionsCollection.length, attribute HTMLPropertiesCollection.length, attribute HTMLSelectElement.length, attribute History.length, attribute Int16Array.length, attribute Int32Array.length, attribute Int8Array.length, attribute MediaList.length, attribute NamedNodeMap.length, attribute NodeList.length, attribute SQLResultSetRowList.length, attribute SVGElementInstanceList.length, attribute SpeechInputResultList.length, attribute Storage.length, attribute StyleSheetList.length, attribute TextTrackCueList.length, attribute TextTrackList.length, attribute TimeRanges.length, attribute TouchList.length, attribute Uint16Array.length, attribute Uint32Array.length, attribute Uint8Array.length, attribute Uint8ClampedArray.length, attribute WebKitAnimationList.length
 dom_externs.lengthAdjust;               // attribute SVGTextContentElement.lengthAdjust
 dom_externs.lengthComputable;           // attribute ProgressEvent.lengthComputable
 dom_externs.limitingConeAngle;          // attribute SVGFESpotLightElement.limitingConeAngle
@@ -7269,7 +7351,7 @@ dom_externs.multiEntry;                 // attribute IDBIndex.multiEntry
 dom_externs.multiple;                   // attribute HTMLInputElement.multiple, attribute HTMLSelectElement.multiple
 dom_externs.multiply;                   // operation SVGMatrix.multiply, operation WebKitCSSMatrix.multiply
 dom_externs.muted;                      // attribute HTMLMediaElement.muted, attribute MediaController.muted
-dom_externs.name;                       // attribute Attr.name, attribute AudioParam.name, attribute DOMException.name, attribute DOMFileSystem.name, attribute DOMFileSystemSync.name, attribute DOMPlugin.name, attribute DOMWindow.name, attribute DocumentType.name, attribute Entry.name, attribute EntrySync.name, attribute EventException.name, attribute File.name, attribute FileException.name, attribute HTMLAnchorElement.name, attribute HTMLAppletElement.name, attribute HTMLButtonElement.name, attribute HTMLEmbedElement.name, attribute HTMLFormElement.name, attribute HTMLFrameElement.name, attribute HTMLIFrameElement.name, attribute HTMLImageElement.name, attribute HTMLInputElement.name, attribute HTMLKeygenElement.name, attribute HTMLMapElement.name, attribute HTMLMetaElement.name, attribute HTMLObjectElement.name, attribute HTMLOutputElement.name, attribute HTMLParamElement.name, attribute HTMLSelectElement.name, attribute HTMLTextAreaElement.name, attribute IDBDatabase.name, attribute IDBDatabaseException.name, attribute IDBIndex.name, attribute IDBObjectStore.name, attribute OperationNotAllowedException.name, attribute RangeException.name, attribute SVGException.name, attribute SharedWorkercontext.name, attribute WebGLActiveInfo.name, attribute WebKitAnimation.name, attribute WebKitCSSKeyframesRule.name, attribute XMLHttpRequestException.name, attribute XPathException.name
+dom_externs.name;                       // attribute Attr.name, attribute AudioParam.name, attribute DOMException.name, attribute DOMFileSystem.name, attribute DOMFileSystemSync.name, attribute DOMPlugin.name, attribute DOMWindow.name, attribute DocumentType.name, attribute Entry.name, attribute EntrySync.name, attribute EventException.name, attribute File.name, attribute FileException.name, attribute HTMLAnchorElement.name, attribute HTMLAppletElement.name, attribute HTMLButtonElement.name, attribute HTMLEmbedElement.name, attribute HTMLFormElement.name, attribute HTMLFrameElement.name, attribute HTMLIFrameElement.name, attribute HTMLImageElement.name, attribute HTMLInputElement.name, attribute HTMLKeygenElement.name, attribute HTMLMapElement.name, attribute HTMLMetaElement.name, attribute HTMLObjectElement.name, attribute HTMLOutputElement.name, attribute HTMLParamElement.name, attribute HTMLSelectElement.name, attribute HTMLTextAreaElement.name, attribute IDBDatabase.name, attribute IDBDatabaseException.name, attribute IDBIndex.name, attribute IDBObjectStore.name, attribute OperationNotAllowedException.name, attribute RangeException.name, attribute SVGException.name, attribute SharedWorkerContext.name, attribute WebGLActiveInfo.name, attribute WebKitAnimation.name, attribute WebKitCSSKeyframesRule.name, attribute XMLHttpRequestException.name, attribute XPathException.name
 dom_externs.namedItem;                  // operation DOMMimeTypeArray.namedItem, operation DOMPlugin.namedItem, operation DOMPluginArray.namedItem, operation HTMLAllCollection.namedItem, operation HTMLCollection.namedItem, operation HTMLSelectElement.namedItem
 dom_externs.namespaceURI;               // attribute Node.namespaceURI
 dom_externs.naturalHeight;              // attribute HTMLImageElement.naturalHeight
@@ -7329,7 +7411,7 @@ dom_externs.onaddtrack;                 // attribute TextTrackList.onaddtrack
 dom_externs.onaudioprocess;             // attribute JavaScriptAudioNode.onaudioprocess
 dom_externs.onblocked;                  // attribute IDBVersionChangeRequest.onblocked
 dom_externs.oncomplete;                 // attribute AudioContext.oncomplete, attribute IDBTransaction.oncomplete
-dom_externs.onconnect;                  // attribute SharedWorkercontext.onconnect
+dom_externs.onconnect;                  // attribute SharedWorkerContext.onconnect
 dom_externs.oncuechange;                // attribute TextTrack.oncuechange
 dom_externs.onenter;                    // attribute TextTrackCue.onenter
 dom_externs.onerror;                    // attribute FileReader.onerror, attribute FileWriter.onerror, attribute IDBDatabase.onerror, attribute IDBRequest.onerror, attribute IDBTransaction.onerror, attribute WorkerContext.onerror
@@ -7349,6 +7431,7 @@ dom_externs.open;                       // operation DOMWindow.open, attribute H
 dom_externs.openCursor;                 // operation IDBIndex.openCursor, operation IDBObjectStore.openCursor
 dom_externs.openDatabase;               // operation DOMWindow.openDatabase, operation WorkerContext.openDatabase
 dom_externs.openDatabaseSync;           // operation WorkerContext.openDatabaseSync
+dom_externs.openInNewTab;               // operation InspectorFrontendHost.openInNewTab
 dom_externs.openKeyCursor;              // operation IDBIndex.openKeyCursor
 dom_externs.opener;                     // attribute DOMWindow.opener
 dom_externs.operationType;              // attribute WebKitCSSFilterValue.operationType, attribute WebKitCSSTransformValue.operationType
@@ -7544,6 +7627,7 @@ dom_externs.reset;                      // operation HTMLFormElement.reset, oper
 dom_externs.resizeBy;                   // operation DOMWindow.resizeBy
 dom_externs.resizeTo;                   // operation DOMWindow.resizeTo
 dom_externs.resonance;                  // attribute HighPass2FilterNode.resonance, attribute LowPass2FilterNode.resonance
+dom_externs.response;                   // attribute XMLHttpRequest.response
 dom_externs.responseBlob;               // attribute XMLHttpRequest.responseBlob
 dom_externs.responseEnd;                // attribute PerformanceTiming.responseEnd
 dom_externs.responseStart;              // attribute PerformanceTiming.responseStart
@@ -7619,7 +7703,7 @@ dom_externs.seed;                       // attribute SVGFETurbulenceElement.seed
 dom_externs.seek;                       // operation FileWriter.seek, operation FileWriterSync.seek
 dom_externs.seekable;                   // attribute HTMLMediaElement.seekable, attribute MediaController.seekable
 dom_externs.seeking;                    // attribute HTMLMediaElement.seeking
-dom_externs.select;                     // operation HTMLInputElement.select, operation HTMLTextAreaElement.select
+dom_externs.select;                     // attribute HTMLContentElement.select, operation HTMLInputElement.select, operation HTMLTextAreaElement.select
 dom_externs.selectAllChildren;          // operation DOMSelection.selectAllChildren
 dom_externs.selectNode;                 // operation Range.selectNode
 dom_externs.selectNodeContents;         // operation Range.selectNodeContents
@@ -7639,6 +7723,7 @@ dom_externs.sendMessageToBackend;       // operation InspectorFrontendHost.sendM
 dom_externs.separator;                  // attribute Counter.separator
 dom_externs.serializeToString;          // operation XMLSerializer.serializeToString
 dom_externs.sessionStorage;             // attribute DOMWindow.sessionStorage
+dom_externs.set;                        // operation Float32Array.set, operation Float64Array.set, operation Int16Array.set, operation Int32Array.set, operation Int8Array.set, operation Uint16Array.set, operation Uint32Array.set, operation Uint8Array.set
 dom_externs.setAlpha;                   // operation CanvasRenderingContext2D.setAlpha
 dom_externs.setAttachedWindowHeight;    // operation InspectorFrontendHost.setAttachedWindowHeight
 dom_externs.setAttribute;               // operation Element.setAttribute
@@ -7785,7 +7870,7 @@ dom_externs.style;                      // attribute CSSFontFaceRule.style, attr
 dom_externs.styleMedia;                 // attribute DOMWindow.styleMedia
 dom_externs.styleSheet;                 // attribute CSSImportRule.styleSheet
 dom_externs.styleSheets;                // attribute Document.styleSheets
-dom_externs.subarray;                   // operation Float32Array.subarray, operation Float64Array.subarray, operation Int16Array.subarray, operation Int32Array.subarray, operation Int8Array.subarray, operation Uint16Array.subarray, operation Uint32Array.subarray, operation Uint8Array.subarray
+dom_externs.subarray;                   // operation Float32Array.subarray, operation Float64Array.subarray, operation Int16Array.subarray, operation Int32Array.subarray, operation Int8Array.subarray, operation Uint16Array.subarray, operation Uint32Array.subarray, operation Uint8Array.subarray, operation Uint8ClampedArray.subarray
 dom_externs.submit;                     // operation HTMLFormElement.submit
 dom_externs.substringData;              // operation CharacterData.substringData
 dom_externs.suffixes;                   // attribute DOMMimeType.suffixes
@@ -7814,13 +7899,14 @@ dom_externs.texImage2D;                 // operation WebGLRenderingContext.texIm
 dom_externs.texParameterf;              // operation WebGLRenderingContext.texParameterf
 dom_externs.texParameteri;              // operation WebGLRenderingContext.texParameteri
 dom_externs.texSubImage2D;              // operation WebGLRenderingContext.texSubImage2D
-dom_externs.text;                       // attribute HTMLAnchorElement.text, attribute HTMLBodyElement.text, attribute HTMLOptionElement.text, attribute HTMLScriptElement.text, attribute HTMLTitleElement.text
+dom_externs.text;                       // attribute HTMLAnchorElement.text, attribute HTMLBodyElement.text, attribute HTMLOptionElement.text, attribute HTMLScriptElement.text, attribute HTMLTitleElement.text, attribute TextTrackCue.text
 dom_externs.textAlign;                  // attribute CanvasRenderingContext2D.textAlign
 dom_externs.textBaseline;               // attribute CanvasRenderingContext2D.textBaseline
 dom_externs.textContent;                // attribute Node.textContent
 dom_externs.textLength;                 // attribute HTMLTextAreaElement.textLength, attribute SVGTextContentElement.textLength
 dom_externs.textPosition;               // attribute TextTrackCue.textPosition
 dom_externs.textTracks;                 // attribute HTMLMediaElement.textTracks
+dom_externs.thisObject;                 // attribute JavaScriptCallFrame.thisObject
 dom_externs.time;                       // operation Console.time
 dom_externs.timeEnd;                    // operation Console.timeEnd
 dom_externs.timeStamp;                  // operation Console.timeStamp, attribute Event.timeStamp
@@ -7888,7 +7974,7 @@ dom_externs.upper;                      // attribute IDBKeyRange.upper
 dom_externs.upperBound;                 // operation IDBKeyRange.upperBound
 dom_externs.upperOpen;                  // attribute IDBKeyRange.upperOpen
 dom_externs.uri;                        // attribute SVGPaint.uri
-dom_externs.url;                        // attribute BeforeLoadEvent.url, attribute ScriptProfileNode.url, attribute StorageEvent.url
+dom_externs.url;                        // attribute BeforeLoadEvent.url, attribute EventSource.url, attribute ScriptProfileNode.url, attribute StorageEvent.url, attribute WebSocket.url
 dom_externs.useCurrentView;             // attribute SVGSVGElement.useCurrentView
 dom_externs.useMap;                     // attribute HTMLImageElement.useMap, attribute HTMLInputElement.useMap, attribute HTMLObjectElement.useMap
 dom_externs.useProgram;                 // operation WebGLRenderingContext.useProgram
@@ -9871,6 +9957,22 @@ HTMLCollection$Dart.$addTo = function(target){
   var rtt = HTMLCollection$Dart.$lookupRTT();
   target.implementedTypes[rtt.classKey] = rtt;
   List$Dart.$addTo(target, [Node$Dart.$lookupRTT()]);
+}
+;
+function HTMLContentElement$Dart(){
+}
+HTMLContentElement$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('HTMLContentElement$Dart'), HTMLContentElement$Dart.$RTTimplements, null, named);
+}
+;
+HTMLContentElement$Dart.$RTTimplements = function(rtt){
+  HTMLContentElement$Dart.$addTo(rtt);
+}
+;
+HTMLContentElement$Dart.$addTo = function(target){
+  var rtt = HTMLContentElement$Dart.$lookupRTT();
+  target.implementedTypes[rtt.classKey] = rtt;
+  HTMLElement$Dart.$addTo(target);
 }
 ;
 function HTMLDListElement$Dart(){
@@ -14323,6 +14425,22 @@ ScriptProfileNode$Dart.$addTo = function(target){
   target.implementedTypes[rtt.classKey] = rtt;
 }
 ;
+function ShadowRoot$Dart(){
+}
+ShadowRoot$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('ShadowRoot$Dart'), ShadowRoot$Dart.$RTTimplements, null, named);
+}
+;
+ShadowRoot$Dart.$RTTimplements = function(rtt){
+  ShadowRoot$Dart.$addTo(rtt);
+}
+;
+ShadowRoot$Dart.$addTo = function(target){
+  var rtt = ShadowRoot$Dart.$lookupRTT();
+  target.implementedTypes[rtt.classKey] = rtt;
+  Node$Dart.$addTo(target);
+}
+;
 function SharedWorker$Dart(){
 }
 SharedWorker$Dart.$lookupRTT = function(typeArgs, named){
@@ -14355,18 +14473,18 @@ SharedWorkerGlobalScope$Dart.$addTo = function(target){
   WorkerContext$Dart.$addTo(target);
 }
 ;
-function SharedWorkercontext$Dart(){
+function SharedWorkerContext$Dart(){
 }
-SharedWorkercontext$Dart.$lookupRTT = function(typeArgs, named){
-  return RTT.create($cls('SharedWorkercontext$Dart'), SharedWorkercontext$Dart.$RTTimplements, null, named);
-}
-;
-SharedWorkercontext$Dart.$RTTimplements = function(rtt){
-  SharedWorkercontext$Dart.$addTo(rtt);
+SharedWorkerContext$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('SharedWorkerContext$Dart'), SharedWorkerContext$Dart.$RTTimplements, null, named);
 }
 ;
-SharedWorkercontext$Dart.$addTo = function(target){
-  var rtt = SharedWorkercontext$Dart.$lookupRTT();
+SharedWorkerContext$Dart.$RTTimplements = function(rtt){
+  SharedWorkerContext$Dart.$addTo(rtt);
+}
+;
+SharedWorkerContext$Dart.$addTo = function(target){
+  var rtt = SharedWorkerContext$Dart.$lookupRTT();
   target.implementedTypes[rtt.classKey] = rtt;
   SharedWorkerGlobalScope$Dart.$addTo(target);
 }
@@ -14720,6 +14838,22 @@ Uint8Array$Dart.$addTo = function(target){
   List$Dart.$addTo(target, [int$Dart.$lookupRTT()]);
 }
 ;
+function Uint8ClampedArray$Dart(){
+}
+Uint8ClampedArray$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('Uint8ClampedArray$Dart'), Uint8ClampedArray$Dart.$RTTimplements, null, named);
+}
+;
+Uint8ClampedArray$Dart.$RTTimplements = function(rtt){
+  Uint8ClampedArray$Dart.$addTo(rtt);
+}
+;
+Uint8ClampedArray$Dart.$addTo = function(target){
+  var rtt = Uint8ClampedArray$Dart.$lookupRTT();
+  target.implementedTypes[rtt.classKey] = rtt;
+  Uint8Array$Dart.$addTo(target);
+}
+;
 function ValidityState$Dart(){
 }
 ValidityState$Dart.$lookupRTT = function(typeArgs, named){
@@ -15039,6 +15173,22 @@ WebKitCSSMatrix$Dart.$lookupRTT = function(typeArgs, named){
 WebKitCSSMatrix$Dart.$addTo = function(target){
   var rtt = WebKitCSSMatrix$Dart.$lookupRTT();
   target.implementedTypes[rtt.classKey] = rtt;
+}
+;
+function WebKitCSSRegionRule$Dart(){
+}
+WebKitCSSRegionRule$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('WebKitCSSRegionRule$Dart'), WebKitCSSRegionRule$Dart.$RTTimplements, null, named);
+}
+;
+WebKitCSSRegionRule$Dart.$RTTimplements = function(rtt){
+  WebKitCSSRegionRule$Dart.$addTo(rtt);
+}
+;
+WebKitCSSRegionRule$Dart.$addTo = function(target){
+  var rtt = WebKitCSSRegionRule$Dart.$lookupRTT();
+  target.implementedTypes[rtt.classKey] = rtt;
+  CSSRule$Dart.$addTo(target);
 }
 ;
 function WebKitCSSTransformValue$Dart(){
@@ -17142,6 +17292,12 @@ _CanvasPixelArrayWrappingImplementation$Dart.prototype.removeRange$member = func
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
 }
 ;
+_CanvasPixelArrayWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _CanvasPixelArrayWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
+}
+;
 _CanvasPixelArrayWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
   $Dart$ThrowException(NotImplementedException$Dart.NotImplementedException$$Factory());
 }
@@ -18574,6 +18730,43 @@ _DOMWindowWrappingImplementation$Dart._get_window$$member_ = function(_this){
   return native__DOMWindowWrappingImplementation__get_window(_this);
 }
 ;
+_DOMWindowWrappingImplementation$Dart.prototype.open$member = function(url, name_0, options){
+  if (options == null) {
+    return _DOMWindowWrappingImplementation$Dart._open$$member_(this, url, name_0);
+  }
+   else {
+    return _DOMWindowWrappingImplementation$Dart._open_2$$member_(this, url, name_0, options);
+  }
+}
+;
+_DOMWindowWrappingImplementation$Dart.prototype.open$named = function($n, $o, url, name_0, options){
+  var seen = 0;
+  var def = 0;
+  switch ($n) {
+    case 2:
+      options = '$p_options' in $o?(++seen , $o.$p_options):(++def , $Dart$Null);
+  }
+  if (seen != $o.count || seen + def + $n != 3)
+    $nsme();
+  return _DOMWindowWrappingImplementation$Dart.prototype.open$member.call(this, url, name_0, options);
+}
+;
+_DOMWindowWrappingImplementation$Dart.prototype.open$named_$lookupRTT = function(){
+  return RTT.createFunction([String$Dart.$lookupRTT(), String$Dart.$lookupRTT(), String$Dart.$lookupRTT(null, 'options')], DOMWindow$Dart.$lookupRTT());
+}
+;
+_DOMWindowWrappingImplementation$Dart.prototype.open$getter = function(){
+  return $bind(_DOMWindowWrappingImplementation$Dart.prototype.open$named, _DOMWindowWrappingImplementation$Dart.prototype.open$named_$lookupRTT, this);
+}
+;
+_DOMWindowWrappingImplementation$Dart._open$$member_ = function(receiver, url, name_0){
+  return native__DOMWindowWrappingImplementation__open(receiver, url, name_0);
+}
+;
+_DOMWindowWrappingImplementation$Dart._open_2$$member_ = function(receiver, url, name_0, options){
+  return native__DOMWindowWrappingImplementation__open_2(receiver, url, name_0, options);
+}
+;
 _DOMWindowWrappingImplementation$Dart.prototype.print$member = function(){
   _DOMWindowWrappingImplementation$Dart._print$$member_(this);
   return;
@@ -18650,19 +18843,41 @@ _DataTransferItemListWrappingImplementation$Dart._get_length$$member_ = function
   return native__DataTransferItemListWrappingImplementation__get_length(_this);
 }
 ;
-_DataTransferItemListWrappingImplementation$Dart.prototype.add$member = function(data, type){
-  _DataTransferItemListWrappingImplementation$Dart._add$$member_(this, data, type);
-  return;
+_DataTransferItemListWrappingImplementation$Dart.prototype.add$member = function(data_OR_file, type){
+  var tmp$0;
+  if (!!(tmp$0 = data_OR_file , tmp$0 != null && tmp$0.$implements$File$Dart)) {
+    if (type == null) {
+      _DataTransferItemListWrappingImplementation$Dart._add$$member_(this, data_OR_file);
+      return;
+    }
+  }
+   else {
+    if ($isString(data_OR_file)) {
+      _DataTransferItemListWrappingImplementation$Dart._add_2$$member_(this, data_OR_file, type);
+      return;
+    }
+  }
+  $Dart$ThrowException('Incorrect number or type of arguments');
 }
 ;
-_DataTransferItemListWrappingImplementation$Dart.prototype.add$named = function($n, $o, data, type){
-  if ($o.count || $n != 2)
+_DataTransferItemListWrappingImplementation$Dart.prototype.add$named = function($n, $o, data_OR_file, type){
+  var seen = 0;
+  var def = 0;
+  switch ($n) {
+    case 1:
+      type = '$p_type' in $o?(++seen , $o.$p_type):(++def , $Dart$Null);
+  }
+  if (seen != $o.count || seen + def + $n != 2)
     $nsme();
-  return _DataTransferItemListWrappingImplementation$Dart.prototype.add$member.call(this, data, type);
+  return _DataTransferItemListWrappingImplementation$Dart.prototype.add$member.call(this, data_OR_file, type);
 }
 ;
-_DataTransferItemListWrappingImplementation$Dart._add$$member_ = function(receiver, data, type){
-  return native__DataTransferItemListWrappingImplementation__add(receiver, data, type);
+_DataTransferItemListWrappingImplementation$Dart._add$$member_ = function(receiver, data_OR_file){
+  return native__DataTransferItemListWrappingImplementation__add(receiver, data_OR_file);
+}
+;
+_DataTransferItemListWrappingImplementation$Dart._add_2$$member_ = function(receiver, data_OR_file, type){
+  return native__DataTransferItemListWrappingImplementation__add_2(receiver, data_OR_file, type);
 }
 ;
 _DataTransferItemListWrappingImplementation$Dart.prototype.clear$member = function(){
@@ -20402,6 +20617,7 @@ _FileWrappingImplementation$Dart.$addTo = function(target){
   File$Dart.$addTo(target);
 }
 ;
+_FileWrappingImplementation$Dart.prototype.$implements$File$Dart = 1;
 _FileWrappingImplementation$Dart.prototype.$implements$Blob$Dart = 1;
 _FileWrappingImplementation$Dart.$Constructor = function(){
   _BlobWrappingImplementation$Dart.$Constructor.call(this);
@@ -20684,6 +20900,12 @@ _Float32ArrayWrappingImplementation$Dart.prototype.removeRange$member = function
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
 }
 ;
+_Float32ArrayWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _Float32ArrayWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
+}
+;
 _Float32ArrayWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
   $Dart$ThrowException(NotImplementedException$Dart.NotImplementedException$$Factory());
 }
@@ -20864,6 +21086,12 @@ _Float64ArrayWrappingImplementation$Dart.prototype.filter$getter = function(){
 ;
 _Float64ArrayWrappingImplementation$Dart.prototype.removeRange$member = function(start, length_0){
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
+}
+;
+_Float64ArrayWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _Float64ArrayWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
 }
 ;
 _Float64ArrayWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
@@ -21199,6 +21427,12 @@ _HTMLCollectionWrappingImplementation$Dart.prototype.filter$getter = function(){
 ;
 _HTMLCollectionWrappingImplementation$Dart.prototype.removeRange$member = function(start, length_0){
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
+}
+;
+_HTMLCollectionWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _HTMLCollectionWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
 }
 ;
 _HTMLCollectionWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
@@ -21870,6 +22104,28 @@ _IDBFactoryWrappingImplementation$Dart.create__IDBFactoryWrappingImplementation$
 function native__IDBFactoryWrappingImplementation_create__IDBFactoryWrappingImplementation(){
   return _IDBFactoryWrappingImplementation$Dart.create__IDBFactoryWrappingImplementation$member();
 }
+_IDBFactoryWrappingImplementation$Dart.prototype.open$member = function(name_0){
+  return _IDBFactoryWrappingImplementation$Dart._open$$member_(this, name_0);
+}
+;
+_IDBFactoryWrappingImplementation$Dart.prototype.open$named = function($n, $o, name_0){
+  if ($o.count || $n != 1)
+    $nsme();
+  return _IDBFactoryWrappingImplementation$Dart.prototype.open$member.call(this, name_0);
+}
+;
+_IDBFactoryWrappingImplementation$Dart.prototype.open$named_$lookupRTT = function(){
+  return RTT.createFunction([String$Dart.$lookupRTT()], IDBRequest$Dart.$lookupRTT());
+}
+;
+_IDBFactoryWrappingImplementation$Dart.prototype.open$getter = function(){
+  return $bind(_IDBFactoryWrappingImplementation$Dart.prototype.open$named, _IDBFactoryWrappingImplementation$Dart.prototype.open$named_$lookupRTT, this);
+}
+;
+_IDBFactoryWrappingImplementation$Dart._open$$member_ = function(receiver, name_0){
+  return native__IDBFactoryWrappingImplementation__open(receiver, name_0);
+}
+;
 _IDBFactoryWrappingImplementation$Dart.prototype.typeName$getter = function(){
   return 'IDBFactory';
 }
@@ -22584,6 +22840,12 @@ _Int16ArrayWrappingImplementation$Dart.prototype.removeRange$member = function(s
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
 }
 ;
+_Int16ArrayWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _Int16ArrayWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
+}
+;
 _Int16ArrayWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
   $Dart$ThrowException(NotImplementedException$Dart.NotImplementedException$$Factory());
 }
@@ -22766,6 +23028,12 @@ _Int32ArrayWrappingImplementation$Dart.prototype.removeRange$member = function(s
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
 }
 ;
+_Int32ArrayWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _Int32ArrayWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
+}
+;
 _Int32ArrayWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
   $Dart$ThrowException(NotImplementedException$Dart.NotImplementedException$$Factory());
 }
@@ -22946,6 +23214,12 @@ _Int8ArrayWrappingImplementation$Dart.prototype.filter$getter = function(){
 ;
 _Int8ArrayWrappingImplementation$Dart.prototype.removeRange$member = function(start, length_0){
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
+}
+;
+_Int8ArrayWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _Int8ArrayWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
 }
 ;
 _Int8ArrayWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
@@ -23453,6 +23727,12 @@ _MediaListWrappingImplementation$Dart.prototype.filter$getter = function(){
 ;
 _MediaListWrappingImplementation$Dart.prototype.removeRange$member = function(start, length_0){
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
+}
+;
+_MediaListWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _MediaListWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
 }
 ;
 _MediaListWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
@@ -24097,6 +24377,12 @@ _NamedNodeMapWrappingImplementation$Dart.prototype.removeRange$member = function
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
 }
 ;
+_NamedNodeMapWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _NamedNodeMapWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
+}
+;
 _NamedNodeMapWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
   $Dart$ThrowException(NotImplementedException$Dart.NotImplementedException$$Factory());
 }
@@ -24434,6 +24720,12 @@ _NodeListWrappingImplementation$Dart.prototype.filter$getter = function(){
 ;
 _NodeListWrappingImplementation$Dart.prototype.removeRange$member = function(start, length_0){
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
+}
+;
+_NodeListWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _NodeListWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
 }
 ;
 _NodeListWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
@@ -25273,6 +25565,29 @@ _HTMLDocumentWrappingImplementation$Dart._clear$$member_ = function(receiver){
   return native__HTMLDocumentWrappingImplementation__clear(receiver);
 }
 ;
+_HTMLDocumentWrappingImplementation$Dart.prototype.open$member = function(){
+  _HTMLDocumentWrappingImplementation$Dart._open$$member_(this);
+  return;
+}
+;
+_HTMLDocumentWrappingImplementation$Dart.prototype.open$named = function($n, $o){
+  if ($o.count || $n != 0)
+    $nsme();
+  return _HTMLDocumentWrappingImplementation$Dart.prototype.open$member.call(this);
+}
+;
+_HTMLDocumentWrappingImplementation$Dart.prototype.open$named_$lookupRTT = function(){
+  return RTT.createFunction(null, RTT.dynamicType.$lookupRTT());
+}
+;
+_HTMLDocumentWrappingImplementation$Dart.prototype.open$getter = function(){
+  return $bind(_HTMLDocumentWrappingImplementation$Dart.prototype.open$named, _HTMLDocumentWrappingImplementation$Dart.prototype.open$named_$lookupRTT, this);
+}
+;
+_HTMLDocumentWrappingImplementation$Dart._open$$member_ = function(receiver){
+  return native__HTMLDocumentWrappingImplementation__open(receiver);
+}
+;
 _HTMLDocumentWrappingImplementation$Dart.prototype.typeName$getter = function(){
   return 'HTMLDocument';
 }
@@ -25793,6 +26108,51 @@ _HTMLCanvasElementWrappingImplementation$Dart.prototype.typeName$getter = functi
   return 'HTMLCanvasElement';
 }
 ;
+function _HTMLContentElementWrappingImplementation$Dart(){
+}
+$inherits(_HTMLContentElementWrappingImplementation$Dart, _HTMLElementWrappingImplementation$Dart);
+_HTMLContentElementWrappingImplementation$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('_HTMLContentElementWrappingImplementation$Dart'), _HTMLContentElementWrappingImplementation$Dart.$RTTimplements, null, named);
+}
+;
+_HTMLContentElementWrappingImplementation$Dart.$RTTimplements = function(rtt){
+  _HTMLContentElementWrappingImplementation$Dart.$addTo(rtt);
+}
+;
+_HTMLContentElementWrappingImplementation$Dart.$addTo = function(target){
+  var rtt = _HTMLContentElementWrappingImplementation$Dart.$lookupRTT();
+  target.implementedTypes[rtt.classKey] = rtt;
+  _HTMLElementWrappingImplementation$Dart.$addTo(target);
+  HTMLContentElement$Dart.$addTo(target);
+}
+;
+_HTMLContentElementWrappingImplementation$Dart.$Constructor = function(){
+  _HTMLElementWrappingImplementation$Dart.$Constructor.call(this);
+}
+;
+_HTMLContentElementWrappingImplementation$Dart.$Initializer = function(){
+  _HTMLElementWrappingImplementation$Dart.$Initializer.call(this);
+}
+;
+_HTMLContentElementWrappingImplementation$Dart._HTMLContentElementWrappingImplementation$$Factory = function(){
+  var tmp$0 = new _HTMLContentElementWrappingImplementation$Dart;
+  tmp$0.$typeInfo = _HTMLContentElementWrappingImplementation$Dart.$lookupRTT();
+  _HTMLContentElementWrappingImplementation$Dart.$Initializer.call(tmp$0);
+  _HTMLContentElementWrappingImplementation$Dart.$Constructor.call(tmp$0);
+  return tmp$0;
+}
+;
+_HTMLContentElementWrappingImplementation$Dart.create__HTMLContentElementWrappingImplementation$member = function(){
+  return _HTMLContentElementWrappingImplementation$Dart._HTMLContentElementWrappingImplementation$$Factory();
+}
+;
+function native__HTMLContentElementWrappingImplementation_create__HTMLContentElementWrappingImplementation(){
+  return _HTMLContentElementWrappingImplementation$Dart.create__HTMLContentElementWrappingImplementation$member();
+}
+_HTMLContentElementWrappingImplementation$Dart.prototype.typeName$getter = function(){
+  return 'HTMLContentElement';
+}
+;
 function _HTMLDListElementWrappingImplementation$Dart(){
 }
 $inherits(_HTMLDListElementWrappingImplementation$Dart, _HTMLElementWrappingImplementation$Dart);
@@ -25924,6 +26284,18 @@ _HTMLDetailsElementWrappingImplementation$Dart.create__HTMLDetailsElementWrappin
 function native__HTMLDetailsElementWrappingImplementation_create__HTMLDetailsElementWrappingImplementation(){
   return _HTMLDetailsElementWrappingImplementation$Dart.create__HTMLDetailsElementWrappingImplementation$member();
 }
+_HTMLDetailsElementWrappingImplementation$Dart.prototype.open$named = function(){
+  return this.open$getter().apply(this, arguments);
+}
+;
+_HTMLDetailsElementWrappingImplementation$Dart.prototype.open$getter = function(){
+  return _HTMLDetailsElementWrappingImplementation$Dart._get_open$$member_(this);
+}
+;
+_HTMLDetailsElementWrappingImplementation$Dart._get_open$$member_ = function(_this){
+  return native__HTMLDetailsElementWrappingImplementation__get_open(_this);
+}
+;
 _HTMLDetailsElementWrappingImplementation$Dart.prototype.typeName$getter = function(){
   return 'HTMLDetailsElement';
 }
@@ -37165,6 +37537,51 @@ _ScriptProfileWrappingImplementation$Dart.prototype.typeName$getter = function()
   return 'ScriptProfile';
 }
 ;
+function _ShadowRootWrappingImplementation$Dart(){
+}
+$inherits(_ShadowRootWrappingImplementation$Dart, _NodeWrappingImplementation$Dart);
+_ShadowRootWrappingImplementation$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('_ShadowRootWrappingImplementation$Dart'), _ShadowRootWrappingImplementation$Dart.$RTTimplements, null, named);
+}
+;
+_ShadowRootWrappingImplementation$Dart.$RTTimplements = function(rtt){
+  _ShadowRootWrappingImplementation$Dart.$addTo(rtt);
+}
+;
+_ShadowRootWrappingImplementation$Dart.$addTo = function(target){
+  var rtt = _ShadowRootWrappingImplementation$Dart.$lookupRTT();
+  target.implementedTypes[rtt.classKey] = rtt;
+  _NodeWrappingImplementation$Dart.$addTo(target);
+  ShadowRoot$Dart.$addTo(target);
+}
+;
+_ShadowRootWrappingImplementation$Dart.$Constructor = function(){
+  _NodeWrappingImplementation$Dart.$Constructor.call(this);
+}
+;
+_ShadowRootWrappingImplementation$Dart.$Initializer = function(){
+  _NodeWrappingImplementation$Dart.$Initializer.call(this);
+}
+;
+_ShadowRootWrappingImplementation$Dart._ShadowRootWrappingImplementation$$Factory = function(){
+  var tmp$0 = new _ShadowRootWrappingImplementation$Dart;
+  tmp$0.$typeInfo = _ShadowRootWrappingImplementation$Dart.$lookupRTT();
+  _ShadowRootWrappingImplementation$Dart.$Initializer.call(tmp$0);
+  _ShadowRootWrappingImplementation$Dart.$Constructor.call(tmp$0);
+  return tmp$0;
+}
+;
+_ShadowRootWrappingImplementation$Dart.create__ShadowRootWrappingImplementation$member = function(){
+  return _ShadowRootWrappingImplementation$Dart._ShadowRootWrappingImplementation$$Factory();
+}
+;
+function native__ShadowRootWrappingImplementation_create__ShadowRootWrappingImplementation(){
+  return _ShadowRootWrappingImplementation$Dart.create__ShadowRootWrappingImplementation$member();
+}
+_ShadowRootWrappingImplementation$Dart.prototype.typeName$getter = function(){
+  return 'ShadowRoot';
+}
+;
 function _SharedWorkerWrappingImplementation$Dart(){
 }
 $inherits(_SharedWorkerWrappingImplementation$Dart, _AbstractWorkerWrappingImplementation$Dart);
@@ -37720,6 +38137,12 @@ _StyleSheetListWrappingImplementation$Dart.prototype.filter$getter = function(){
 ;
 _StyleSheetListWrappingImplementation$Dart.prototype.removeRange$member = function(start, length_0){
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
+}
+;
+_StyleSheetListWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _StyleSheetListWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
 }
 ;
 _StyleSheetListWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
@@ -38424,6 +38847,12 @@ _TouchListWrappingImplementation$Dart.prototype.removeRange$member = function(st
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
 }
 ;
+_TouchListWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _TouchListWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
+}
+;
 _TouchListWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
   $Dart$ThrowException(NotImplementedException$Dart.NotImplementedException$$Factory());
 }
@@ -39126,6 +39555,12 @@ _Uint16ArrayWrappingImplementation$Dart.prototype.removeRange$member = function(
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
 }
 ;
+_Uint16ArrayWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _Uint16ArrayWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
+}
+;
 _Uint16ArrayWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
   $Dart$ThrowException(NotImplementedException$Dart.NotImplementedException$$Factory());
 }
@@ -39306,6 +39741,12 @@ _Uint32ArrayWrappingImplementation$Dart.prototype.filter$getter = function(){
 ;
 _Uint32ArrayWrappingImplementation$Dart.prototype.removeRange$member = function(start, length_0){
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
+}
+;
+_Uint32ArrayWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _Uint32ArrayWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
 }
 ;
 _Uint32ArrayWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
@@ -39490,6 +39931,12 @@ _Uint8ArrayWrappingImplementation$Dart.prototype.removeRange$member = function(s
   $Dart$ThrowException(UnsupportedOperationException$Dart.UnsupportedOperationException$$Factory('Cannot removeRange on immutable List.'));
 }
 ;
+_Uint8ArrayWrappingImplementation$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return _Uint8ArrayWrappingImplementation$Dart.prototype.removeRange$member.call(this, start, length_0);
+}
+;
 _Uint8ArrayWrappingImplementation$Dart.prototype.getRange$member = function(start, length_0){
   $Dart$ThrowException(NotImplementedException$Dart.NotImplementedException$$Factory());
 }
@@ -39522,6 +39969,60 @@ _Uint8ArrayWrappingImplementation$Dart.prototype.iterator$named = function($n, $
 ;
 _Uint8ArrayWrappingImplementation$Dart.prototype.typeName$getter = function(){
   return 'Uint8Array';
+}
+;
+function _Uint8ClampedArrayWrappingImplementation$Dart(){
+}
+$inherits(_Uint8ClampedArrayWrappingImplementation$Dart, _Uint8ArrayWrappingImplementation$Dart);
+_Uint8ClampedArrayWrappingImplementation$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('_Uint8ClampedArrayWrappingImplementation$Dart'), _Uint8ClampedArrayWrappingImplementation$Dart.$RTTimplements, null, named);
+}
+;
+_Uint8ClampedArrayWrappingImplementation$Dart.$RTTimplements = function(rtt){
+  _Uint8ClampedArrayWrappingImplementation$Dart.$addTo(rtt);
+}
+;
+_Uint8ClampedArrayWrappingImplementation$Dart.$addTo = function(target){
+  var rtt = _Uint8ClampedArrayWrappingImplementation$Dart.$lookupRTT();
+  target.implementedTypes[rtt.classKey] = rtt;
+  _Uint8ArrayWrappingImplementation$Dart.$addTo(target);
+  Uint8ClampedArray$Dart.$addTo(target);
+}
+;
+_Uint8ClampedArrayWrappingImplementation$Dart.prototype.$implements$List$Dart = 1;
+_Uint8ClampedArrayWrappingImplementation$Dart.$Constructor = function(){
+  _Uint8ArrayWrappingImplementation$Dart.$Constructor.call(this);
+}
+;
+_Uint8ClampedArrayWrappingImplementation$Dart.$Initializer = function(){
+  _Uint8ArrayWrappingImplementation$Dart.$Initializer.call(this);
+}
+;
+_Uint8ClampedArrayWrappingImplementation$Dart._Uint8ClampedArrayWrappingImplementation$$Factory = function(){
+  var tmp$0 = new _Uint8ClampedArrayWrappingImplementation$Dart;
+  tmp$0.$typeInfo = _Uint8ClampedArrayWrappingImplementation$Dart.$lookupRTT();
+  _Uint8ClampedArrayWrappingImplementation$Dart.$Initializer.call(tmp$0);
+  _Uint8ClampedArrayWrappingImplementation$Dart.$Constructor.call(tmp$0);
+  return tmp$0;
+}
+;
+_Uint8ClampedArrayWrappingImplementation$Dart.create__Uint8ClampedArrayWrappingImplementation$member = function(){
+  return _Uint8ClampedArrayWrappingImplementation$Dart._Uint8ClampedArrayWrappingImplementation$$Factory();
+}
+;
+function native__Uint8ClampedArrayWrappingImplementation_create__Uint8ClampedArrayWrappingImplementation(){
+  return _Uint8ClampedArrayWrappingImplementation$Dart.create__Uint8ClampedArrayWrappingImplementation$member();
+}
+_Uint8ClampedArrayWrappingImplementation$Dart.prototype.length$getter = function(){
+  return _Uint8ClampedArrayWrappingImplementation$Dart._get_length_Uint8ClampedArray$$member_(this);
+}
+;
+_Uint8ClampedArrayWrappingImplementation$Dart._get_length_Uint8ClampedArray$$member_ = function(_this){
+  return native__Uint8ClampedArrayWrappingImplementation__get_length_Uint8ClampedArray(_this);
+}
+;
+_Uint8ClampedArrayWrappingImplementation$Dart.prototype.typeName$getter = function(){
+  return 'Uint8ClampedArray';
 }
 ;
 function _ValidityStateWrappingImplementation$Dart(){
@@ -40800,6 +41301,51 @@ _WebKitCSSMatrixWrappingImplementation$Dart.prototype.typeName$getter = function
   return 'WebKitCSSMatrix';
 }
 ;
+function _WebKitCSSRegionRuleWrappingImplementation$Dart(){
+}
+$inherits(_WebKitCSSRegionRuleWrappingImplementation$Dart, _CSSRuleWrappingImplementation$Dart);
+_WebKitCSSRegionRuleWrappingImplementation$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('_WebKitCSSRegionRuleWrappingImplementation$Dart'), _WebKitCSSRegionRuleWrappingImplementation$Dart.$RTTimplements, null, named);
+}
+;
+_WebKitCSSRegionRuleWrappingImplementation$Dart.$RTTimplements = function(rtt){
+  _WebKitCSSRegionRuleWrappingImplementation$Dart.$addTo(rtt);
+}
+;
+_WebKitCSSRegionRuleWrappingImplementation$Dart.$addTo = function(target){
+  var rtt = _WebKitCSSRegionRuleWrappingImplementation$Dart.$lookupRTT();
+  target.implementedTypes[rtt.classKey] = rtt;
+  _CSSRuleWrappingImplementation$Dart.$addTo(target);
+  WebKitCSSRegionRule$Dart.$addTo(target);
+}
+;
+_WebKitCSSRegionRuleWrappingImplementation$Dart.$Constructor = function(){
+  _CSSRuleWrappingImplementation$Dart.$Constructor.call(this);
+}
+;
+_WebKitCSSRegionRuleWrappingImplementation$Dart.$Initializer = function(){
+  _CSSRuleWrappingImplementation$Dart.$Initializer.call(this);
+}
+;
+_WebKitCSSRegionRuleWrappingImplementation$Dart._WebKitCSSRegionRuleWrappingImplementation$$Factory = function(){
+  var tmp$0 = new _WebKitCSSRegionRuleWrappingImplementation$Dart;
+  tmp$0.$typeInfo = _WebKitCSSRegionRuleWrappingImplementation$Dart.$lookupRTT();
+  _WebKitCSSRegionRuleWrappingImplementation$Dart.$Initializer.call(tmp$0);
+  _WebKitCSSRegionRuleWrappingImplementation$Dart.$Constructor.call(tmp$0);
+  return tmp$0;
+}
+;
+_WebKitCSSRegionRuleWrappingImplementation$Dart.create__WebKitCSSRegionRuleWrappingImplementation$member = function(){
+  return _WebKitCSSRegionRuleWrappingImplementation$Dart._WebKitCSSRegionRuleWrappingImplementation$$Factory();
+}
+;
+function native__WebKitCSSRegionRuleWrappingImplementation_create__WebKitCSSRegionRuleWrappingImplementation(){
+  return _WebKitCSSRegionRuleWrappingImplementation$Dart.create__WebKitCSSRegionRuleWrappingImplementation$member();
+}
+_WebKitCSSRegionRuleWrappingImplementation$Dart.prototype.typeName$getter = function(){
+  return 'WebKitCSSRegionRule';
+}
+;
 function _WebKitCSSTransformValueWrappingImplementation$Dart(){
 }
 $inherits(_WebKitCSSTransformValueWrappingImplementation$Dart, _CSSValueListWrappingImplementation$Dart);
@@ -41219,49 +41765,49 @@ _DedicatedWorkerContextWrappingImplementation$Dart.prototype.typeName$getter = f
   return 'DedicatedWorkerContext';
 }
 ;
-function _SharedWorkercontextWrappingImplementation$Dart(){
+function _SharedWorkerContextWrappingImplementation$Dart(){
 }
-$inherits(_SharedWorkercontextWrappingImplementation$Dart, _WorkerContextWrappingImplementation$Dart);
-_SharedWorkercontextWrappingImplementation$Dart.$lookupRTT = function(typeArgs, named){
-  return RTT.create($cls('_SharedWorkercontextWrappingImplementation$Dart'), _SharedWorkercontextWrappingImplementation$Dart.$RTTimplements, null, named);
-}
-;
-_SharedWorkercontextWrappingImplementation$Dart.$RTTimplements = function(rtt){
-  _SharedWorkercontextWrappingImplementation$Dart.$addTo(rtt);
+$inherits(_SharedWorkerContextWrappingImplementation$Dart, _WorkerContextWrappingImplementation$Dart);
+_SharedWorkerContextWrappingImplementation$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('_SharedWorkerContextWrappingImplementation$Dart'), _SharedWorkerContextWrappingImplementation$Dart.$RTTimplements, null, named);
 }
 ;
-_SharedWorkercontextWrappingImplementation$Dart.$addTo = function(target){
-  var rtt = _SharedWorkercontextWrappingImplementation$Dart.$lookupRTT();
+_SharedWorkerContextWrappingImplementation$Dart.$RTTimplements = function(rtt){
+  _SharedWorkerContextWrappingImplementation$Dart.$addTo(rtt);
+}
+;
+_SharedWorkerContextWrappingImplementation$Dart.$addTo = function(target){
+  var rtt = _SharedWorkerContextWrappingImplementation$Dart.$lookupRTT();
   target.implementedTypes[rtt.classKey] = rtt;
   _WorkerContextWrappingImplementation$Dart.$addTo(target);
-  SharedWorkercontext$Dart.$addTo(target);
+  SharedWorkerContext$Dart.$addTo(target);
 }
 ;
-_SharedWorkercontextWrappingImplementation$Dart.$Constructor = function(){
+_SharedWorkerContextWrappingImplementation$Dart.$Constructor = function(){
   _WorkerContextWrappingImplementation$Dart.$Constructor.call(this);
 }
 ;
-_SharedWorkercontextWrappingImplementation$Dart.$Initializer = function(){
+_SharedWorkerContextWrappingImplementation$Dart.$Initializer = function(){
   _WorkerContextWrappingImplementation$Dart.$Initializer.call(this);
 }
 ;
-_SharedWorkercontextWrappingImplementation$Dart._SharedWorkercontextWrappingImplementation$$Factory = function(){
-  var tmp$0 = new _SharedWorkercontextWrappingImplementation$Dart;
-  tmp$0.$typeInfo = _SharedWorkercontextWrappingImplementation$Dart.$lookupRTT();
-  _SharedWorkercontextWrappingImplementation$Dart.$Initializer.call(tmp$0);
-  _SharedWorkercontextWrappingImplementation$Dart.$Constructor.call(tmp$0);
+_SharedWorkerContextWrappingImplementation$Dart._SharedWorkerContextWrappingImplementation$$Factory = function(){
+  var tmp$0 = new _SharedWorkerContextWrappingImplementation$Dart;
+  tmp$0.$typeInfo = _SharedWorkerContextWrappingImplementation$Dart.$lookupRTT();
+  _SharedWorkerContextWrappingImplementation$Dart.$Initializer.call(tmp$0);
+  _SharedWorkerContextWrappingImplementation$Dart.$Constructor.call(tmp$0);
   return tmp$0;
 }
 ;
-_SharedWorkercontextWrappingImplementation$Dart.create__SharedWorkercontextWrappingImplementation$member = function(){
-  return _SharedWorkercontextWrappingImplementation$Dart._SharedWorkercontextWrappingImplementation$$Factory();
+_SharedWorkerContextWrappingImplementation$Dart.create__SharedWorkerContextWrappingImplementation$member = function(){
+  return _SharedWorkerContextWrappingImplementation$Dart._SharedWorkerContextWrappingImplementation$$Factory();
 }
 ;
-function native__SharedWorkercontextWrappingImplementation_create__SharedWorkercontextWrappingImplementation(){
-  return _SharedWorkercontextWrappingImplementation$Dart.create__SharedWorkercontextWrappingImplementation$member();
+function native__SharedWorkerContextWrappingImplementation_create__SharedWorkerContextWrappingImplementation(){
+  return _SharedWorkerContextWrappingImplementation$Dart.create__SharedWorkerContextWrappingImplementation$member();
 }
-_SharedWorkercontextWrappingImplementation$Dart.prototype.typeName$getter = function(){
-  return 'SharedWorkercontext';
+_SharedWorkerContextWrappingImplementation$Dart.prototype.typeName$getter = function(){
+  return 'SharedWorkerContext';
 }
 ;
 function _WorkerLocationWrappingImplementation$Dart(){
@@ -41603,6 +42149,84 @@ _XMLHttpRequestWrappingImplementation$Dart.create__XMLHttpRequestWrappingImpleme
 function native__XMLHttpRequestWrappingImplementation_create__XMLHttpRequestWrappingImplementation(){
   return _XMLHttpRequestWrappingImplementation$Dart.create__XMLHttpRequestWrappingImplementation$member();
 }
+_XMLHttpRequestWrappingImplementation$Dart.prototype.responseText$getter = function(){
+  return _XMLHttpRequestWrappingImplementation$Dart._get_responseText$$member_(this);
+}
+;
+_XMLHttpRequestWrappingImplementation$Dart._get_responseText$$member_ = function(_this){
+  return native__XMLHttpRequestWrappingImplementation__get_responseText(_this);
+}
+;
+_XMLHttpRequestWrappingImplementation$Dart.prototype.open$member = function(method, url, async, user, password){
+  if (async == null) {
+    if (user == null) {
+      if (password == null) {
+        _XMLHttpRequestWrappingImplementation$Dart._open$$member_(this, method, url);
+        return;
+      }
+    }
+  }
+   else {
+    if (user == null) {
+      if (password == null) {
+        _XMLHttpRequestWrappingImplementation$Dart._open_2$$member_(this, method, url, async);
+        return;
+      }
+    }
+     else {
+      if (password == null) {
+        _XMLHttpRequestWrappingImplementation$Dart._open_3$$member_(this, method, url, async, user);
+        return;
+      }
+       else {
+        _XMLHttpRequestWrappingImplementation$Dart._open_4$$member_(this, method, url, async, user, password);
+        return;
+      }
+    }
+  }
+  $Dart$ThrowException('Incorrect number or type of arguments');
+}
+;
+_XMLHttpRequestWrappingImplementation$Dart.prototype.open$named = function($n, $o, method, url, async, user, password){
+  var seen = 0;
+  var def = 0;
+  switch ($n) {
+    case 2:
+      async = '$p_async' in $o?(++seen , $o.$p_async):(++def , $Dart$Null);
+    case 3:
+      user = '$p_user' in $o?(++seen , $o.$p_user):(++def , $Dart$Null);
+    case 4:
+      password = '$p_password' in $o?(++seen , $o.$p_password):(++def , $Dart$Null);
+  }
+  if (seen != $o.count || seen + def + $n != 5)
+    $nsme();
+  return _XMLHttpRequestWrappingImplementation$Dart.prototype.open$member.call(this, method, url, async, user, password);
+}
+;
+_XMLHttpRequestWrappingImplementation$Dart.prototype.open$named_$lookupRTT = function(){
+  return RTT.createFunction([String$Dart.$lookupRTT(), String$Dart.$lookupRTT(), bool$Dart.$lookupRTT(null, 'async'), String$Dart.$lookupRTT(null, 'user'), String$Dart.$lookupRTT(null, 'password')], RTT.dynamicType.$lookupRTT());
+}
+;
+_XMLHttpRequestWrappingImplementation$Dart.prototype.open$getter = function(){
+  return $bind(_XMLHttpRequestWrappingImplementation$Dart.prototype.open$named, _XMLHttpRequestWrappingImplementation$Dart.prototype.open$named_$lookupRTT, this);
+}
+;
+_XMLHttpRequestWrappingImplementation$Dart._open$$member_ = function(receiver, method, url){
+  return native__XMLHttpRequestWrappingImplementation__open(receiver, method, url);
+}
+;
+_XMLHttpRequestWrappingImplementation$Dart._open_2$$member_ = function(receiver, method, url, async){
+  return native__XMLHttpRequestWrappingImplementation__open_2(receiver, method, url, async);
+}
+;
+_XMLHttpRequestWrappingImplementation$Dart._open_3$$member_ = function(receiver, method, url, async, user){
+  return native__XMLHttpRequestWrappingImplementation__open_3(receiver, method, url, async, user);
+}
+;
+_XMLHttpRequestWrappingImplementation$Dart._open_4$$member_ = function(receiver, method, url, async, user, password){
+  return native__XMLHttpRequestWrappingImplementation__open_4(receiver, method, url, async, user, password);
+}
+;
 _XMLHttpRequestWrappingImplementation$Dart.prototype.send$member = function(data){
   var tmp$1, tmp$2, tmp$3, tmp$0;
   if (data == null) {
@@ -42056,6 +42680,16 @@ _Collections$Dart.filter$member = function(source, destination, f){
   return destination;
 }
 ;
+function _XMLHttpRequestFactoryProvider$Dart(){
+}
+_XMLHttpRequestFactoryProvider$Dart.XMLHttpRequest$$Factory = function(){
+  return _XMLHttpRequestFactoryProvider$Dart.create$member();
+}
+;
+_XMLHttpRequestFactoryProvider$Dart.create$member = function(){
+  return native__XMLHttpRequestFactoryProvider_create();
+}
+;
 function _VariableSizeListIterator$Dart(){
 }
 _VariableSizeListIterator$Dart.$lookupRTT = function(typeArgs, named){
@@ -42064,7 +42698,6 @@ _VariableSizeListIterator$Dart.$lookupRTT = function(typeArgs, named){
 ;
 _VariableSizeListIterator$Dart.$RTTimplements = function(rtt, typeArgs){
   _VariableSizeListIterator$Dart.$addTo(rtt, typeArgs);
-  rtt.derivedTypes = [];
 }
 ;
 _VariableSizeListIterator$Dart.$addTo = function(target, typeArgs){
@@ -42126,7 +42759,6 @@ _FixedSizeListIterator$Dart.$lookupRTT = function(typeArgs, named){
 ;
 _FixedSizeListIterator$Dart.$RTTimplements = function(rtt, typeArgs){
   _FixedSizeListIterator$Dart.$addTo(rtt, typeArgs);
-  rtt.derivedTypes = [];
 }
 ;
 _FixedSizeListIterator$Dart.$addTo = function(target, typeArgs){
@@ -42833,6 +43465,11 @@ htmlimpl0a8e4b$LevelDom$Dart.wrapWindow$member = function(raw){
   return raw == null?$Dart$Null:raw.dartObjectLocalStorage$getter() != null?raw.dartObjectLocalStorage$getter():htmlimpl0a8e4b$WindowWrappingImplementation$Dart.WindowWrappingImplementation$_wrap$28$htmlimpl0a8e4b$$Factory_(raw);
 }
 ;
+htmlimpl0a8e4b$LevelDom$Dart.unwrapMaybePrimitive$member = function(raw){
+  var tmp$0;
+  return raw == null || $isString(raw) || !!(tmp$0 = raw , tmp$0 != null && tmp$0.$implements$num$Dart) || $isBool(raw)?raw:raw._ptr$htmlimpl0a8e4b$$getter_();
+}
+;
 htmlimpl0a8e4b$LevelDom$Dart.unwrap$member = function(raw){
   return raw == null?$Dart$Null:raw._ptr$htmlimpl0a8e4b$$getter_();
 }
@@ -42856,6 +43493,7 @@ htmlimpl0a8e4b$DOMWrapperBase$Dart.$addTo = function(target){
 ;
 htmlimpl0a8e4b$DOMWrapperBase$Dart._wrap$htmlimpl0a8e4b$$Constructor_ = function(_ptr){
   var tmp$0;
+  var hasExistingWrapper = this._ptr$htmlimpl0a8e4b$$getter_().dartObjectLocalStorage$getter() == null;
   ;
   this._ptr$htmlimpl0a8e4b$$getter_().dartObjectLocalStorage$setter(tmp$0 = this) , tmp$0;
 }
@@ -43015,6 +43653,12 @@ htmlimpl0a8e4b$FilteredElementList$Dart.prototype.removeRange$member = function(
   this._filtered$htmlimpl0a8e4b$$getter_().getRange$named(2, $noargs, start, length_0).forEach$named(1, $noargs, $bind(htmlimpl0a8e4b$FilteredElementList$Dart$removeRange$c0$39_39$Hoisted$named, htmlimpl0a8e4b$FilteredElementList$Dart$removeRange$c0$39_39$Hoisted$named$named_$lookupRTT, $Dart$Null));
 }
 ;
+htmlimpl0a8e4b$FilteredElementList$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return htmlimpl0a8e4b$FilteredElementList$Dart.prototype.removeRange$member.call(this, start, length_0);
+}
+;
 htmlimpl0a8e4b$FilteredElementList$Dart.prototype.clear$member = function(){
   this._childNodes$htmlimpl0a8e4b$$getter_().clear$named(0, $noargs);
 }
@@ -43148,15 +43792,7 @@ htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.first$getter = function(){
 }
 ;
 htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.forEach$member = function(f){
-  {
-    var $0 = this._childElements$htmlimpl0a8e4b$$getter_().iterator$named(0, $noargs);
-    while ($0.hasNext$named(0, $noargs)) {
-      var element_0 = $0.next$named(0, $noargs);
-      {
-        f(1, $noargs, htmlimpl0a8e4b$LevelDom$Dart.wrapElement$member(element_0));
-      }
-    }
-  }
+  return this._toList$htmlimpl0a8e4b$$member_().forEach$named(1, $noargs, f);
 }
 ;
 htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.forEach$named = function($n, $o, f){
@@ -43165,27 +43801,8 @@ htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.forEach$named = function($n, 
   return htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.forEach$member.call(this, f);
 }
 ;
-function htmlimpl0a8e4b$_ChildrenElementList$Dart$filter$c0$40_40$Hoisted(dartc_scp$0, dartc_scp$1, element_0){
-  if (dartc_scp$0.f(1, $noargs, element_0)) {
-    dartc_scp$1.output.add$named(1, $noargs, element_0);
-  }
-}
-function htmlimpl0a8e4b$_ChildrenElementList$Dart$filter$c0$40_40$Hoisted$named($s0, $s1, $n, $o, element){
-  if ($o.count || $n != 1)
-    $nsme();
-  return htmlimpl0a8e4b$_ChildrenElementList$Dart$filter$c0$40_40$Hoisted($s0, $s1, element);
-}
-function htmlimpl0a8e4b$_ChildrenElementList$Dart$filter$c0$40_40$Hoisted$named$named_$lookupRTT(){
-  return RTT.createFunction([htmld071c1$Element$Dart.$lookupRTT()], RTT.dynamicType.$lookupRTT());
-}
 htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.filter$member = function(f){
-  var dartc_scp$0 = {f:f};
-  var dartc_scp$1;
-  dartc_scp$1 = {};
-  dartc_scp$1.output = ListFactory$Dart.List$$Factory([htmld071c1$Element$Dart.$lookupRTT()], $Dart$Null);
-  this.forEach$member($bind(htmlimpl0a8e4b$_ChildrenElementList$Dart$filter$c0$40_40$Hoisted$named, htmlimpl0a8e4b$_ChildrenElementList$Dart$filter$c0$40_40$Hoisted$named$named_$lookupRTT, $Dart$Null, dartc_scp$0, dartc_scp$1));
-  return dartc_scp$1.output;
-  dartc_scp$1 = $Dart$Null;
+  return htmlimpl0a8e4b$_ElementList$Dart._ElementList$$Factory(this._toList$htmlimpl0a8e4b$$member_().filter$named(1, $noargs, f));
 }
 ;
 htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.filter$named = function($n, $o, f){
@@ -43195,7 +43812,7 @@ htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.filter$named = function($n, $
 }
 ;
 htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.filter$named_$lookupRTT = function(){
-  return RTT.createFunction([RTT.createFunction([htmld071c1$Element$Dart.$lookupRTT()], bool$Dart.$lookupRTT())], Collection$Dart.$lookupRTT([htmld071c1$Element$Dart.$lookupRTT()]));
+  return RTT.createFunction([RTT.createFunction([htmld071c1$Element$Dart.$lookupRTT()], bool$Dart.$lookupRTT())], htmld071c1$ElementList$Dart.$lookupRTT());
 }
 ;
 htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.filter$getter = function(){
@@ -43203,7 +43820,7 @@ htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.filter$getter = function(){
 }
 ;
 htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.isEmpty$member = function(){
-  return this._element$htmlimpl0a8e4b$$getter_().firstElementChild$getter() != null;
+  return this._element$htmlimpl0a8e4b$$getter_().firstElementChild$getter() == null;
 }
 ;
 htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.isEmpty$named = function($n, $o){
@@ -43267,12 +43884,29 @@ htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.addAll$named = function($n, $
   return htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.addAll$member.call(this, collection);
 }
 ;
+function htmlimpl0a8e4b$_ChildrenElementList$Dart$removeRange$c0$40_40$Hoisted(i){
+  return this.INDEX$operator(i).remove$named(0, $noargs);
+}
+function htmlimpl0a8e4b$_ChildrenElementList$Dart$removeRange$c0$40_40$Hoisted$named($n, $o, i){
+  if ($o.count || $n != 1)
+    $nsme();
+  return htmlimpl0a8e4b$_ChildrenElementList$Dart$removeRange$c0$40_40$Hoisted.call(this, i);
+}
+function htmlimpl0a8e4b$_ChildrenElementList$Dart$removeRange$c0$40_40$Hoisted$named$named_$lookupRTT(){
+  return RTT.createFunction([RTT.dynamicType.$lookupRTT()], RTT.dynamicType.$lookupRTT());
+}
 htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.removeRange$member = function(start, length_0){
-  $Dart$ThrowException($intern(NotImplementedException$Dart.NotImplementedException$$Factory()));
+  return htmlimpl0a8e4b$Lists$Dart.removeRange$member(this, start, length_0, $bind(htmlimpl0a8e4b$_ChildrenElementList$Dart$removeRange$c0$40_40$Hoisted$named, htmlimpl0a8e4b$_ChildrenElementList$Dart$removeRange$c0$40_40$Hoisted$named$named_$lookupRTT, this));
+}
+;
+htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.removeRange$member.call(this, start, length_0);
 }
 ;
 htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.getRange$member = function(start, length_0){
-  $Dart$ThrowException($intern(NotImplementedException$Dart.NotImplementedException$$Factory()));
+  return htmlimpl0a8e4b$_ElementList$Dart._ElementList$$Factory(htmlimpl0a8e4b$Lists$Dart.getRange$member(this, start, length_0));
 }
 ;
 htmlimpl0a8e4b$_ChildrenElementList$Dart.prototype.getRange$named = function($n, $o, start, length_0){
@@ -43324,6 +43958,56 @@ htmlimpl0a8e4b$EventTargetWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Cons
 ;
 htmlimpl0a8e4b$EventTargetWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Initializer_ = function(ptr){
   htmlimpl0a8e4b$DOMWrapperBase$Dart._wrap$htmlimpl0a8e4b$$Initializer_.call(this, ptr);
+}
+;
+function htmlimpl0a8e4b$Lists$Dart(){
+}
+htmlimpl0a8e4b$Lists$Dart.removeRange$member = function(a, start, length_0, removeOne){
+  var tmp$0;
+  if (LT$operator(start, 0)) {
+    $Dart$ThrowException(IndexOutOfRangeException$Dart.IndexOutOfRangeException$$Factory(start));
+  }
+   else {
+    if (LT$operator(length_0, 0)) {
+      $Dart$ThrowException(IllegalArgumentException$Dart.IllegalArgumentException$$Factory('negative length ' + $toString(length_0) + ''));
+    }
+     else {
+      if (GT$operator(ADD$operator(start, length_0), a.length$getter())) {
+        $Dart$ThrowException(IndexOutOfRangeException$Dart.IndexOutOfRangeException$$Factory(Math$Dart.min$member(a.length$getter(), start)));
+      }
+    }
+  }
+  {
+    var i = 0;
+    for (; LT$operator(i, length_0); tmp$0 = i , (i = ADD$operator(tmp$0, 1) , tmp$0)) {
+      removeOne(1, $noargs, start);
+    }
+  }
+}
+;
+htmlimpl0a8e4b$Lists$Dart.getRange$member = function(a, start, length_0){
+  var tmp$0;
+  if (LT$operator(start, 0)) {
+    $Dart$ThrowException(IndexOutOfRangeException$Dart.IndexOutOfRangeException$$Factory(start));
+  }
+   else {
+    if (LT$operator(length_0, 0)) {
+      $Dart$ThrowException(IllegalArgumentException$Dart.IllegalArgumentException$$Factory('negative length ' + $toString(length_0) + ''));
+    }
+     else {
+      if (GT$operator(ADD$operator(start, length_0), a.length$getter())) {
+        $Dart$ThrowException(IndexOutOfRangeException$Dart.IndexOutOfRangeException$$Factory(Math$Dart.min$member(a.length$getter(), start)));
+      }
+    }
+  }
+  var result = RTT.setTypeInfo([], Array.$lookupRTT());
+  {
+    var i = 0;
+    for (; LT$operator(i, length_0); tmp$0 = i , (i = ADD$operator(tmp$0, 1) , tmp$0)) {
+      result.add$named(1, $noargs, a.INDEX$operator(ADD$operator(start, i)));
+    }
+  }
+  return result;
 }
 ;
 function htmlimpl0a8e4b$_ChildrenNodeList$Dart(){
@@ -43398,27 +44082,8 @@ htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.forEach$named = function($n, $o,
   return htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.forEach$member.call(this, f);
 }
 ;
-function htmlimpl0a8e4b$_ChildrenNodeList$Dart$filter$c0$37_37$Hoisted(dartc_scp$0, dartc_scp$1, element_0){
-  if (dartc_scp$0.f(1, $noargs, element_0)) {
-    dartc_scp$1.output.add$named(1, $noargs, element_0);
-  }
-}
-function htmlimpl0a8e4b$_ChildrenNodeList$Dart$filter$c0$37_37$Hoisted$named($s0, $s1, $n, $o, element){
-  if ($o.count || $n != 1)
-    $nsme();
-  return htmlimpl0a8e4b$_ChildrenNodeList$Dart$filter$c0$37_37$Hoisted($s0, $s1, element);
-}
-function htmlimpl0a8e4b$_ChildrenNodeList$Dart$filter$c0$37_37$Hoisted$named$named_$lookupRTT(){
-  return RTT.createFunction([htmld071c1$Node$Dart.$lookupRTT()], RTT.dynamicType.$lookupRTT());
-}
 htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.filter$member = function(f){
-  var dartc_scp$0 = {f:f};
-  var dartc_scp$1;
-  dartc_scp$1 = {};
-  dartc_scp$1.output = ListFactory$Dart.List$$Factory([htmld071c1$Node$Dart.$lookupRTT()], $Dart$Null);
-  this.forEach$member($bind(htmlimpl0a8e4b$_ChildrenNodeList$Dart$filter$c0$37_37$Hoisted$named, htmlimpl0a8e4b$_ChildrenNodeList$Dart$filter$c0$37_37$Hoisted$named$named_$lookupRTT, $Dart$Null, dartc_scp$0, dartc_scp$1));
-  return dartc_scp$1.output;
-  dartc_scp$1 = $Dart$Null;
+  return htmlimpl0a8e4b$_NodeList$Dart._NodeList$$Factory(this._toList$htmlimpl0a8e4b$$member_().filter$named(1, $noargs, f));
 }
 ;
 htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.filter$named = function($n, $o, f){
@@ -43428,7 +44093,7 @@ htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.filter$named = function($n, $o, 
 }
 ;
 htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.filter$named_$lookupRTT = function(){
-  return RTT.createFunction([RTT.createFunction([htmld071c1$Node$Dart.$lookupRTT()], bool$Dart.$lookupRTT())], Collection$Dart.$lookupRTT([htmld071c1$Node$Dart.$lookupRTT()]));
+  return RTT.createFunction([RTT.createFunction([htmld071c1$Node$Dart.$lookupRTT()], bool$Dart.$lookupRTT())], htmld071c1$NodeList$Dart.$lookupRTT());
 }
 ;
 htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.filter$getter = function(){
@@ -43500,52 +44165,29 @@ htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.addAll$named = function($n, $o, 
   return htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.addAll$member.call(this, collection);
 }
 ;
+function htmlimpl0a8e4b$_ChildrenNodeList$Dart$removeRange$c0$37_37$Hoisted(i){
+  return this.INDEX$operator(i).remove$named(0, $noargs);
+}
+function htmlimpl0a8e4b$_ChildrenNodeList$Dart$removeRange$c0$37_37$Hoisted$named($n, $o, i){
+  if ($o.count || $n != 1)
+    $nsme();
+  return htmlimpl0a8e4b$_ChildrenNodeList$Dart$removeRange$c0$37_37$Hoisted.call(this, i);
+}
+function htmlimpl0a8e4b$_ChildrenNodeList$Dart$removeRange$c0$37_37$Hoisted$named$named_$lookupRTT(){
+  return RTT.createFunction([RTT.dynamicType.$lookupRTT()], RTT.dynamicType.$lookupRTT());
+}
 htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.removeRange$member = function(start, length_0){
-  var tmp$0;
-  if (LT$operator(start, 0)) {
-    $Dart$ThrowException(IndexOutOfRangeException$Dart.IndexOutOfRangeException$$Factory(start));
-  }
-   else {
-    if (LT$operator(length_0, 0)) {
-      $Dart$ThrowException(IllegalArgumentException$Dart.IllegalArgumentException$$Factory('negative length ' + $toString(length_0) + ''));
-    }
-     else {
-      if (GT$operator(ADD$operator(start, length_0), this.length$getter())) {
-        $Dart$ThrowException(IndexOutOfRangeException$Dart.IndexOutOfRangeException$$Factory(Math$Dart.min$member(this.length$getter(), start)));
-      }
-    }
-  }
-  {
-    var i = 0;
-    for (; LT$operator(i, length_0); tmp$0 = i , (i = ADD$operator(tmp$0, 1) , tmp$0)) {
-      this.INDEX$operator(start).remove$named(0, $noargs);
-    }
-  }
+  return htmlimpl0a8e4b$Lists$Dart.removeRange$member(this, start, length_0, $bind(htmlimpl0a8e4b$_ChildrenNodeList$Dart$removeRange$c0$37_37$Hoisted$named, htmlimpl0a8e4b$_ChildrenNodeList$Dart$removeRange$c0$37_37$Hoisted$named$named_$lookupRTT, this));
+}
+;
+htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.removeRange$member.call(this, start, length_0);
 }
 ;
 htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.getRange$member = function(start, length_0){
-  var tmp$0;
-  if (LT$operator(start, 0)) {
-    $Dart$ThrowException(IndexOutOfRangeException$Dart.IndexOutOfRangeException$$Factory(start));
-  }
-   else {
-    if (LT$operator(length_0, 0)) {
-      $Dart$ThrowException(IllegalArgumentException$Dart.IllegalArgumentException$$Factory('negative length ' + $toString(length_0) + ''));
-    }
-     else {
-      if (GT$operator(ADD$operator(start, length_0), this.length$getter())) {
-        $Dart$ThrowException(IndexOutOfRangeException$Dart.IndexOutOfRangeException$$Factory(Math$Dart.min$member(this.length$getter(), start)));
-      }
-    }
-  }
-  var nodes = RTT.setTypeInfo([], Array.$lookupRTT());
-  {
-    var i = 0;
-    for (; LT$operator(i, length_0); tmp$0 = i , (i = ADD$operator(tmp$0, 1) , tmp$0)) {
-      nodes.add$named(1, $noargs, this.INDEX$operator(ADD$operator(start, i)));
-    }
-  }
-  return nodes;
+  return htmlimpl0a8e4b$_NodeList$Dart._NodeList$$Factory(htmlimpl0a8e4b$Lists$Dart.getRange$member(this, start, length_0));
 }
 ;
 htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.getRange$named = function($n, $o, start, length_0){
@@ -43571,6 +44213,292 @@ htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.clear$named_$lookupRTT = functio
 ;
 htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.clear$getter = function(){
   return $bind(htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.clear$named, htmlimpl0a8e4b$_ChildrenNodeList$Dart.prototype.clear$named_$lookupRTT, this);
+}
+;
+function htmlimpl0a8e4b$_ListWrapper$Dart(){
+}
+htmlimpl0a8e4b$_ListWrapper$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('htmlimpl0a8e4b$_ListWrapper$Dart'), htmlimpl0a8e4b$_ListWrapper$Dart.$RTTimplements, typeArgs, named);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.$RTTimplements = function(rtt, typeArgs){
+  htmlimpl0a8e4b$_ListWrapper$Dart.$addTo(rtt, typeArgs);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.$addTo = function(target, typeArgs){
+  var rtt = htmlimpl0a8e4b$_ListWrapper$Dart.$lookupRTT(typeArgs);
+  target.implementedTypes[rtt.classKey] = rtt;
+  List$Dart.$addTo(target, [RTT.getTypeArg(target.typeArgs, 0)]);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.$implements$List$Dart = 1;
+htmlimpl0a8e4b$_ListWrapper$Dart.$Constructor = function(_list){
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.$Initializer = function(_list){
+  this._list$htmlimpl0a8e4b$$field_ = _list;
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype._list$htmlimpl0a8e4b$$getter_ = function(){
+  return this._list$htmlimpl0a8e4b$$field_;
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.iterator$member = function(){
+  return this._list$htmlimpl0a8e4b$$getter_().iterator$named(0, $noargs);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.iterator$named = function($n, $o){
+  if ($o.count || $n != 0)
+    $nsme();
+  return htmlimpl0a8e4b$_ListWrapper$Dart.prototype.iterator$member.call(this);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.forEach$member = function(f){
+  return this._list$htmlimpl0a8e4b$$getter_().forEach$named(1, $noargs, f);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.forEach$named = function($n, $o, f){
+  if ($o.count || $n != 1)
+    $nsme();
+  return htmlimpl0a8e4b$_ListWrapper$Dart.prototype.forEach$member.call(this, f);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.filter$member = function(f){
+  return this._list$htmlimpl0a8e4b$$getter_().filter$named(1, $noargs, f);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.filter$named = function($n, $o, f){
+  if ($o.count || $n != 1)
+    $nsme();
+  return htmlimpl0a8e4b$_ListWrapper$Dart.prototype.filter$member.call(this, f);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.filter$named_$lookupRTT = function(){
+  return RTT.createFunction([RTT.createFunction([RTT.getTypeArg(RTT.getTypeArgsFor(this, $cls('htmlimpl0a8e4b$_ListWrapper$Dart')), 0)], bool$Dart.$lookupRTT())], List$Dart.$lookupRTT([RTT.getTypeArg(RTT.getTypeArgsFor(this, $cls('htmlimpl0a8e4b$_ListWrapper$Dart')), 0)]));
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.filter$getter = function(){
+  return $bind(htmlimpl0a8e4b$_ListWrapper$Dart.prototype.filter$named, htmlimpl0a8e4b$_ListWrapper$Dart.prototype.filter$named_$lookupRTT, this);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.isEmpty$member = function(){
+  return this._list$htmlimpl0a8e4b$$getter_().isEmpty$named(0, $noargs);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.isEmpty$named = function($n, $o){
+  if ($o.count || $n != 0)
+    $nsme();
+  return htmlimpl0a8e4b$_ListWrapper$Dart.prototype.isEmpty$member.call(this);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.length$getter = function(){
+  return this._list$htmlimpl0a8e4b$$getter_().length$getter();
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.length$setter = function(newLength){
+  var tmp$0;
+  this._list$htmlimpl0a8e4b$$getter_().length$setter(tmp$0 = newLength) , tmp$0;
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.INDEX$operator = function(index){
+  return this._list$htmlimpl0a8e4b$$getter_().INDEX$operator(index);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.ASSIGN_INDEX$operator = function(index, value){
+  var tmp$0;
+  this._list$htmlimpl0a8e4b$$getter_().ASSIGN_INDEX$operator(index, tmp$0 = value) , tmp$0;
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.add$member = function(value){
+  return this._list$htmlimpl0a8e4b$$getter_().add$named(1, $noargs, value);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.add$named = function($n, $o, value){
+  if ($o.count || $n != 1)
+    $nsme();
+  return htmlimpl0a8e4b$_ListWrapper$Dart.prototype.add$member.call(this, value);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.addAll$member = function(collection){
+  return this._list$htmlimpl0a8e4b$$getter_().addAll$named(1, $noargs, collection);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.addAll$named = function($n, $o, collection){
+  if ($o.count || $n != 1)
+    $nsme();
+  return htmlimpl0a8e4b$_ListWrapper$Dart.prototype.addAll$member.call(this, collection);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.clear$member = function(){
+  return this._list$htmlimpl0a8e4b$$getter_().clear$named(0, $noargs);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.clear$named = function($n, $o){
+  if ($o.count || $n != 0)
+    $nsme();
+  return htmlimpl0a8e4b$_ListWrapper$Dart.prototype.clear$member.call(this);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.clear$named_$lookupRTT = function(){
+  return RTT.createFunction(null, RTT.dynamicType.$lookupRTT());
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.clear$getter = function(){
+  return $bind(htmlimpl0a8e4b$_ListWrapper$Dart.prototype.clear$named, htmlimpl0a8e4b$_ListWrapper$Dart.prototype.clear$named_$lookupRTT, this);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.getRange$member = function(start, length_0){
+  return this._list$htmlimpl0a8e4b$$getter_().getRange$named(2, $noargs, start, length_0);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.getRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return htmlimpl0a8e4b$_ListWrapper$Dart.prototype.getRange$member.call(this, start, length_0);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.removeRange$member = function(start, length_0){
+  return this._list$htmlimpl0a8e4b$$getter_().removeRange$named(2, $noargs, start, length_0);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.removeRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return htmlimpl0a8e4b$_ListWrapper$Dart.prototype.removeRange$member.call(this, start, length_0);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.first$named = function(){
+  return this.first$getter().apply(this, arguments);
+}
+;
+htmlimpl0a8e4b$_ListWrapper$Dart.prototype.first$getter = function(){
+  return this._list$htmlimpl0a8e4b$$getter_().INDEX$operator(0);
+}
+;
+function htmlimpl0a8e4b$_ElementList$Dart(){
+}
+$inherits(htmlimpl0a8e4b$_ElementList$Dart, htmlimpl0a8e4b$_ListWrapper$Dart);
+htmlimpl0a8e4b$_ElementList$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('htmlimpl0a8e4b$_ElementList$Dart'), htmlimpl0a8e4b$_ElementList$Dart.$RTTimplements, null, named);
+}
+;
+htmlimpl0a8e4b$_ElementList$Dart.$RTTimplements = function(rtt){
+  htmlimpl0a8e4b$_ElementList$Dart.$addTo(rtt);
+}
+;
+htmlimpl0a8e4b$_ElementList$Dart.$addTo = function(target){
+  var rtt = htmlimpl0a8e4b$_ElementList$Dart.$lookupRTT();
+  target.implementedTypes[rtt.classKey] = rtt;
+  htmlimpl0a8e4b$_ListWrapper$Dart.$addTo(target, [htmld071c1$Element$Dart.$lookupRTT()]);
+  htmld071c1$ElementList$Dart.$addTo(target);
+}
+;
+htmlimpl0a8e4b$_ElementList$Dart.prototype.$implements$List$Dart = 1;
+htmlimpl0a8e4b$_ElementList$Dart.$Constructor = function(list){
+  htmlimpl0a8e4b$_ListWrapper$Dart.$Constructor.call(this, list);
+}
+;
+htmlimpl0a8e4b$_ElementList$Dart.$Initializer = function(list){
+  htmlimpl0a8e4b$_ListWrapper$Dart.$Initializer.call(this, list);
+}
+;
+htmlimpl0a8e4b$_ElementList$Dart._ElementList$$Factory = function(list){
+  var tmp$0 = new htmlimpl0a8e4b$_ElementList$Dart;
+  tmp$0.$typeInfo = htmlimpl0a8e4b$_ElementList$Dart.$lookupRTT();
+  htmlimpl0a8e4b$_ElementList$Dart.$Initializer.call(tmp$0, list);
+  htmlimpl0a8e4b$_ElementList$Dart.$Constructor.call(tmp$0, list);
+  return tmp$0;
+}
+;
+htmlimpl0a8e4b$_ElementList$Dart.prototype.filter$member = function(f){
+  return htmlimpl0a8e4b$_ElementList$Dart._ElementList$$Factory(htmlimpl0a8e4b$_ListWrapper$Dart.prototype.filter$member.call(this, f));
+}
+;
+htmlimpl0a8e4b$_ElementList$Dart.prototype.filter$named = function($n, $o, f){
+  if ($o.count || $n != 1)
+    $nsme();
+  return htmlimpl0a8e4b$_ElementList$Dart.prototype.filter$member.call(this, f);
+}
+;
+htmlimpl0a8e4b$_ElementList$Dart.prototype.filter$named_$lookupRTT = function(){
+  return RTT.createFunction([RTT.createFunction([htmld071c1$Element$Dart.$lookupRTT()], bool$Dart.$lookupRTT())], htmld071c1$ElementList$Dart.$lookupRTT());
+}
+;
+htmlimpl0a8e4b$_ElementList$Dart.prototype.filter$getter = function(){
+  return $bind(htmlimpl0a8e4b$_ElementList$Dart.prototype.filter$named, htmlimpl0a8e4b$_ElementList$Dart.prototype.filter$named_$lookupRTT, this);
+}
+;
+htmlimpl0a8e4b$_ElementList$Dart.prototype.getRange$member = function(start, length_0){
+  return htmlimpl0a8e4b$_ElementList$Dart._ElementList$$Factory(htmlimpl0a8e4b$_ListWrapper$Dart.prototype.getRange$member.call(this, start, length_0));
+}
+;
+htmlimpl0a8e4b$_ElementList$Dart.prototype.getRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return htmlimpl0a8e4b$_ElementList$Dart.prototype.getRange$member.call(this, start, length_0);
+}
+;
+function htmlimpl0a8e4b$_NodeList$Dart(){
+}
+$inherits(htmlimpl0a8e4b$_NodeList$Dart, htmlimpl0a8e4b$_ListWrapper$Dart);
+htmlimpl0a8e4b$_NodeList$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('htmlimpl0a8e4b$_NodeList$Dart'), htmlimpl0a8e4b$_NodeList$Dart.$RTTimplements, null, named);
+}
+;
+htmlimpl0a8e4b$_NodeList$Dart.$RTTimplements = function(rtt){
+  htmlimpl0a8e4b$_NodeList$Dart.$addTo(rtt);
+}
+;
+htmlimpl0a8e4b$_NodeList$Dart.$addTo = function(target){
+  var rtt = htmlimpl0a8e4b$_NodeList$Dart.$lookupRTT();
+  target.implementedTypes[rtt.classKey] = rtt;
+  htmlimpl0a8e4b$_ListWrapper$Dart.$addTo(target, [htmld071c1$Node$Dart.$lookupRTT()]);
+  htmld071c1$NodeList$Dart.$addTo(target);
+}
+;
+htmlimpl0a8e4b$_NodeList$Dart.prototype.$implements$List$Dart = 1;
+htmlimpl0a8e4b$_NodeList$Dart.$Constructor = function(list){
+  htmlimpl0a8e4b$_ListWrapper$Dart.$Constructor.call(this, list);
+}
+;
+htmlimpl0a8e4b$_NodeList$Dart.$Initializer = function(list){
+  htmlimpl0a8e4b$_ListWrapper$Dart.$Initializer.call(this, list);
+}
+;
+htmlimpl0a8e4b$_NodeList$Dart._NodeList$$Factory = function(list){
+  var tmp$0 = new htmlimpl0a8e4b$_NodeList$Dart;
+  tmp$0.$typeInfo = htmlimpl0a8e4b$_NodeList$Dart.$lookupRTT();
+  htmlimpl0a8e4b$_NodeList$Dart.$Initializer.call(tmp$0, list);
+  htmlimpl0a8e4b$_NodeList$Dart.$Constructor.call(tmp$0, list);
+  return tmp$0;
+}
+;
+htmlimpl0a8e4b$_NodeList$Dart.prototype.filter$member = function(f){
+  return htmlimpl0a8e4b$_NodeList$Dart._NodeList$$Factory(htmlimpl0a8e4b$_ListWrapper$Dart.prototype.filter$member.call(this, f));
+}
+;
+htmlimpl0a8e4b$_NodeList$Dart.prototype.filter$named = function($n, $o, f){
+  if ($o.count || $n != 1)
+    $nsme();
+  return htmlimpl0a8e4b$_NodeList$Dart.prototype.filter$member.call(this, f);
+}
+;
+htmlimpl0a8e4b$_NodeList$Dart.prototype.filter$named_$lookupRTT = function(){
+  return RTT.createFunction([RTT.createFunction([htmld071c1$Node$Dart.$lookupRTT()], bool$Dart.$lookupRTT())], htmld071c1$NodeList$Dart.$lookupRTT());
+}
+;
+htmlimpl0a8e4b$_NodeList$Dart.prototype.filter$getter = function(){
+  return $bind(htmlimpl0a8e4b$_NodeList$Dart.prototype.filter$named, htmlimpl0a8e4b$_NodeList$Dart.prototype.filter$named_$lookupRTT, this);
+}
+;
+htmlimpl0a8e4b$_NodeList$Dart.prototype.getRange$member = function(start, length_0){
+  return htmlimpl0a8e4b$_NodeList$Dart._NodeList$$Factory(htmlimpl0a8e4b$_ListWrapper$Dart.prototype.getRange$member.call(this, start, length_0));
+}
+;
+htmlimpl0a8e4b$_NodeList$Dart.prototype.getRange$named = function($n, $o, start, length_0){
+  if ($o.count || $n != 2)
+    $nsme();
+  return htmlimpl0a8e4b$_NodeList$Dart.prototype.getRange$member.call(this, start, length_0);
 }
 ;
 function htmlimpl0a8e4b$NodeWrappingImplementation$Dart(){
@@ -44412,6 +45340,14 @@ htmlimpl0a8e4b$DetailsElementWrappingImplementation$Dart.DetailsElementWrappingI
   htmlimpl0a8e4b$DetailsElementWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Initializer_.call(tmp$0, ptr);
   htmlimpl0a8e4b$DetailsElementWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Constructor_.call(tmp$0, ptr);
   return tmp$0;
+}
+;
+htmlimpl0a8e4b$DetailsElementWrappingImplementation$Dart.prototype.open$named = function(){
+  return this.open$getter().apply(this, arguments);
+}
+;
+htmlimpl0a8e4b$DetailsElementWrappingImplementation$Dart.prototype.open$getter = function(){
+  return this._ptr$htmlimpl0a8e4b$$getter_().open$getter();
 }
 ;
 function htmlimpl0a8e4b$DivElementWrappingImplementation$Dart(){
@@ -46287,6 +47223,7 @@ htmlimpl0a8e4b$DocumentWrappingImplementation$Dart.$addTo = function(target){
   htmld071c1$Document$Dart.$addTo(target);
 }
 ;
+htmlimpl0a8e4b$DocumentWrappingImplementation$Dart.prototype.$implements$htmld071c1$Document$Dart = 1;
 htmlimpl0a8e4b$DocumentWrappingImplementation$Dart.prototype.$implements$htmld071c1$Element$Dart = 1;
 htmlimpl0a8e4b$DocumentWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Constructor_ = function(_documentPtr, ptr){
   htmlimpl0a8e4b$ElementWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Constructor_.call(this, ptr);
@@ -46372,6 +47309,7 @@ htmlimpl0a8e4b$SVGDocumentWrappingImplementation$Dart.$addTo = function(target){
   htmld071c1$SVGDocument$Dart.$addTo(target);
 }
 ;
+htmlimpl0a8e4b$SVGDocumentWrappingImplementation$Dart.prototype.$implements$htmld071c1$Document$Dart = 1;
 htmlimpl0a8e4b$SVGDocumentWrappingImplementation$Dart.prototype.$implements$htmld071c1$Element$Dart = 1;
 htmlimpl0a8e4b$SVGDocumentWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Constructor_ = function(ptr){
   htmlimpl0a8e4b$DocumentWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Constructor_.call(this, ptr, ptr.rootElement$getter());
@@ -49485,6 +50423,35 @@ htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.length$setter = funct
   this._ptr$htmlimpl0a8e4b$$getter_().length$setter(tmp$0 = value) , tmp$0;
 }
 ;
+htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.open$member = function(url, target, features){
+  if (features == null) {
+    return htmlimpl0a8e4b$LevelDom$Dart.wrapWindow$member(this._ptr$htmlimpl0a8e4b$$getter_().open$named(2, $noargs, url, target));
+  }
+   else {
+    return htmlimpl0a8e4b$LevelDom$Dart.wrapWindow$member(this._ptr$htmlimpl0a8e4b$$getter_().open$named(3, $noargs, url, target, features));
+  }
+}
+;
+htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.open$named = function($n, $o, url, target, features){
+  var seen = 0;
+  var def = 0;
+  switch ($n) {
+    case 2:
+      features = '$p_features' in $o?(++seen , $o.$p_features):(++def , $Dart$Null);
+  }
+  if (seen != $o.count || seen + def + $n != 3)
+    $nsme();
+  return htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.open$member.call(this, url, target, features);
+}
+;
+htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.open$named_$lookupRTT = function(){
+  return RTT.createFunction([String$Dart.$lookupRTT(), String$Dart.$lookupRTT(), String$Dart.$lookupRTT(null, 'features')], htmld071c1$Window$Dart.$lookupRTT());
+}
+;
+htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.open$getter = function(){
+  return $bind(htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.open$named, htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.open$named_$lookupRTT, this);
+}
+;
 htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.print$member = function(){
   this._ptr$htmlimpl0a8e4b$$getter_().print$named(0, $noargs);
 }
@@ -49501,6 +50468,123 @@ htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.print$named_$lookupRT
 ;
 htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.print$getter = function(){
   return $bind(htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.print$named, htmlimpl0a8e4b$WindowWrappingImplementation$Dart.prototype.print$named_$lookupRTT, this);
+}
+;
+function htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart(){
+}
+$inherits(htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart, htmlimpl0a8e4b$EventTargetWrappingImplementation$Dart);
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart'), htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.$RTTimplements, null, named);
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.$RTTimplements = function(rtt){
+  htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.$addTo(rtt);
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.$addTo = function(target){
+  var rtt = htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.$lookupRTT();
+  target.implementedTypes[rtt.classKey] = rtt;
+  htmlimpl0a8e4b$EventTargetWrappingImplementation$Dart.$addTo(target);
+  htmld071c1$XMLHttpRequest$Dart.$addTo(target);
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Constructor_ = function(ptr){
+  htmlimpl0a8e4b$EventTargetWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Constructor_.call(this, ptr);
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Initializer_ = function(ptr){
+  htmlimpl0a8e4b$EventTargetWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Initializer_.call(this, ptr);
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.XMLHttpRequestWrappingImplementation$_wrap$36$htmlimpl0a8e4b$$Factory_ = function(ptr){
+  var tmp$0 = new htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart;
+  tmp$0.$typeInfo = htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.$lookupRTT();
+  htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Initializer_.call(tmp$0, ptr);
+  htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart._wrap$htmlimpl0a8e4b$$Constructor_.call(tmp$0, ptr);
+  return tmp$0;
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.XMLHttpRequestWrappingImplementation$$Factory = function(){
+  return htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.XMLHttpRequestWrappingImplementation$_wrap$36$htmlimpl0a8e4b$$Factory_(_XMLHttpRequestFactoryProvider$Dart.XMLHttpRequest$$Factory());
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.prototype.responseText$getter = function(){
+  return this._ptr$htmlimpl0a8e4b$$getter_().responseText$getter();
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.prototype.open$member = function(method, url, async, user, password){
+  if (user == null) {
+    if (password == null) {
+      this._ptr$htmlimpl0a8e4b$$getter_().open$named(3, $noargs, method, url, async);
+      return;
+    }
+  }
+   else {
+    if (password == null) {
+      this._ptr$htmlimpl0a8e4b$$getter_().open$named(4, $noargs, method, url, async, user);
+      return;
+    }
+     else {
+      this._ptr$htmlimpl0a8e4b$$getter_().open$named(5, $noargs, method, url, async, user, password);
+      return;
+    }
+  }
+  $Dart$ThrowException('Incorrect number or type of arguments');
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.prototype.open$named = function($n, $o, method, url, async, user, password){
+  var seen = 0;
+  var def = 0;
+  switch ($n) {
+    case 3:
+      user = '$p_user' in $o?(++seen , $o.$p_user):(++def , $Dart$Null);
+    case 4:
+      password = '$p_password' in $o?(++seen , $o.$p_password):(++def , $Dart$Null);
+  }
+  if (seen != $o.count || seen + def + $n != 5)
+    $nsme();
+  return htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.prototype.open$member.call(this, method, url, async, user, password);
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.prototype.open$named_$lookupRTT = function(){
+  return RTT.createFunction([String$Dart.$lookupRTT(), String$Dart.$lookupRTT(), bool$Dart.$lookupRTT(), String$Dart.$lookupRTT(null, 'user'), String$Dart.$lookupRTT(null, 'password')], RTT.dynamicType.$lookupRTT());
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.prototype.open$getter = function(){
+  return $bind(htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.prototype.open$named, htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.prototype.open$named_$lookupRTT, this);
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.prototype.send$member = function(data){
+  var tmp$0;
+  if (data == null) {
+    this._ptr$htmlimpl0a8e4b$$getter_().send$named(0, $noargs);
+    return;
+  }
+   else {
+    if (!!(tmp$0 = data , tmp$0 != null && tmp$0.$implements$htmld071c1$Document$Dart)) {
+      this._ptr$htmlimpl0a8e4b$$getter_().send$named(1, $noargs, htmlimpl0a8e4b$LevelDom$Dart.unwrapMaybePrimitive$member(data));
+      return;
+    }
+     else {
+      if ($isString(data)) {
+        this._ptr$htmlimpl0a8e4b$$getter_().send$named(1, $noargs, htmlimpl0a8e4b$LevelDom$Dart.unwrapMaybePrimitive$member(data));
+        return;
+      }
+    }
+  }
+  $Dart$ThrowException('Incorrect number or type of arguments');
+}
+;
+htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.prototype.send$named = function($n, $o, data){
+  var seen = 0;
+  var def = 0;
+  switch ($n) {
+    case 0:
+      data = '$p_data' in $o?(++seen , $o.$p_data):(++def , $Dart$Null);
+  }
+  if (seen != $o.count || seen + def + $n != 1)
+    $nsme();
+  return htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.prototype.send$member.call(this, data);
 }
 ;
 function htmld071c1$AnchorElement$Dart(){
@@ -52396,6 +53480,22 @@ htmld071c1$Window$Dart.$addTo = function(target){
   htmld071c1$EventTarget$Dart.$addTo(target);
 }
 ;
+function htmld071c1$XMLHttpRequest$Dart(){
+}
+htmld071c1$XMLHttpRequest$Dart.$lookupRTT = function(typeArgs, named){
+  return RTT.create($cls('htmld071c1$XMLHttpRequest$Dart'), htmld071c1$XMLHttpRequest$Dart.$RTTimplements, null, named);
+}
+;
+htmld071c1$XMLHttpRequest$Dart.$RTTimplements = function(rtt){
+  htmld071c1$XMLHttpRequest$Dart.$addTo(rtt);
+}
+;
+htmld071c1$XMLHttpRequest$Dart.$addTo = function(target){
+  var rtt = htmld071c1$XMLHttpRequest$Dart.$lookupRTT();
+  target.implementedTypes[rtt.classKey] = rtt;
+  htmld071c1$EventTarget$Dart.$addTo(target);
+}
+;
 function unnameda79b03$Job$Dart(){
 }
 unnameda79b03$Job$Dart.$lookupRTT = function(typeArgs, named){
@@ -52462,6 +53562,15 @@ unnameda79b03$minirunner$Dart.prototype.run$member = function(){
     }
   }
   ;
+  var url = 'http://www.google.com';
+  this.append$member(ADD$operator('connecting ', url));
+  var request = htmlimpl0a8e4b$XMLHttpRequestWrappingImplementation$Dart.XMLHttpRequestWrappingImplementation$$Factory();
+  request.open$named(3, $noargs, 'GET', url, false);
+  this.append$member('opened.');
+  request.send$named(0, $noargs);
+  this.append$member('sent.');
+  var res = request.responseText$getter();
+  this.append$member(res);
 }
 ;
 unnameda79b03$minirunner$Dart.prototype.run$named = function($n, $o){

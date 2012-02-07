@@ -1,33 +1,27 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Web.UI;
+using JobRunnerWebConsole;
 using mini_runner.Engine;
 
-namespace JobRunnerWebConsole
+namespace mini_runner.web.Models
 {
-    public partial class Default : Page
+    public class HomeViewModel
     {
         public IEnumerable<Job> Jobs
         {
-            get { return Global.Jobs.AsEnumerable(); }
+            get { return MvcApplication.Jobs.AsEnumerable(); }
         }
 
         public IEnumerable<string> Logs
         {
             get
             {
-                return Global.Logs
+                return MvcApplication.Logs
                     .OrderByDescending(x => x.On)
                     .Take(45)
                     .Select(x => "[" + x.On + "]" + x.Title + " " + x.Details);
             }
         }
 
-        protected void Page_Load(object sender, EventArgs e)
-        {
-        }
     }
 }

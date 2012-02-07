@@ -15,7 +15,17 @@ class minirunner {
       {
       append (j.title + " " + j.nextExecution);
       };
-    
+      
+     var url = "http://www.google.com";
+      append ("connecting " + url);
+      var request = new XMLHttpRequest ();
+     request.open ("GET", url, false);
+     append ("opened.");
+     request.send ();
+     append ("sent.");
+     var res = request.responseText;
+     
+     append (res);
   }
 
   void append(String message) {

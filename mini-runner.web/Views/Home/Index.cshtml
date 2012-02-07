@@ -1,0 +1,35 @@
+﻿@model mini_runner.web.Models.HomeViewModel
+<!DOCTYPE html>
+<html>
+<head>
+    <title>mini-runner</title>
+    <script type="text/javascript">
+        var timer = setTimeout("window.location.href=window.location.href", 10000);
+    </script>
+</head>
+<body>
+    <div>
+        <h1>
+            Job Runner Web Console</h1>
+        <div>
+            <p>@DateTime.Now </p>
+            <h3>
+                Registered Jobs</h3>
+            @foreach (var job in Model.Jobs)
+            {
+                <ul>
+                    <li>
+                        @job.Name | @job.State | @job.Period | @job.NextExecution | <a href="#">Logs...</a>
+                    </li>
+                </ul>
+            }
+        </div>
+    </div>
+    <div>
+        @foreach (var log in Model.Logs)
+        { 
+            @log <br />
+        }
+    </div>
+</body>
+</html>
