@@ -12,5 +12,18 @@ namespace mini_runner.web.Controllers
             return View(new HomeViewModel ());
         }
 
+        [HttpGet]
+        public JsonResult Jobs ()
+        {
+            var jobs =  new HomeViewModel().Jobs;
+            return Json(jobs, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult Logs ()
+        {
+            var jobs =  new HomeViewModel().Logs;
+            return Json(jobs, JsonRequestBehavior.AllowGet);
+        }
     }
 }
